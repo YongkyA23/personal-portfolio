@@ -28,8 +28,28 @@ export const Contact = () => {
     });
   };
 
+  const validateForm = () => {
+    // Check if any formDetail value is empty
+    for (const field in formDetails) {
+      if (!formDetails[field].trim()) {
+        Swal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: "Please fill in all fields before submitting.",
+        });
+        return false; // Prevent submission
+      }
+    }
+    return true; // Allow submission
+  };
+
   const sendEmail = (e) => {
     e.preventDefault();
+
+     if (!validateForm()) {
+       return; // Stop submission if form is not valid
+     }
+    
 
     setButtonText("Sending...");
 
