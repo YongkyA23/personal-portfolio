@@ -1,10 +1,15 @@
-import { useState } from "react";
+import React from "react";
+import { useState, useRef } from "react";
 import { Container, Row, Col } from "react-bootstrap";
 import contactImg from "../assets/img/contact-img.svg";
 import "animate.css";
 import TrackVisibility from "react-on-screen";
+import emailjs from "@emailjs/browser";
+import Swal from "sweetalert2";
 
 export const Contact = () => {
+  const form = useRef();
+
   const formInitialDetails = {
     firstName: "",
     lastName: "",
@@ -23,28 +28,43 @@ export const Contact = () => {
     });
   };
 
-  const handleSubmit = async (e) => {
-    console.log(JSON.stringify(formDetails));
+  const sendEmail = (e) => {
     e.preventDefault();
+
     setButtonText("Sending...");
-    let response = await fetch("http://localhost:3000/contact", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json;charset=utf-8",
-      },
-      body: JSON.stringify(formDetails),
-    });
-    setButtonText("Send");
-    let result = await response.json();
-    setFormDetails(formInitialDetails);
-    if (result.code == 200) {
-      setStatus({ succes: true, message: "Message sent successfully" });
-    } else {
-      setStatus({
-        succes: false,
-        message: "Something went wrong, please try again later.",
-      });
-    }
+
+    emailjs
+      .sendForm(
+        "service_lb38vga",
+        "template_vdr9867",
+        form.current,
+        "vR6VY63U5EDIFben9"
+      )
+      .then(
+        (result) => {
+          console.log("SUCCESS!", result.text); // Log the result text from EmailJS
+          console.log("Form data:", form.current); // Log form data after success
+          setFormDetails(formInitialDetails);
+          setButtonText("Send");
+
+          Swal.fire({
+            icon: "success",
+            title: "Message Sent",
+            text: "Your message has been sent successfully!",
+          });
+        },
+        (error) => {
+          console.log(error.text);
+          setButtonText("Send");
+          Swal.fire({
+            icon: "error",
+            title: "Oops...",
+            text: "Something went wrong! Please try again later.",
+          });
+        }
+      );
+
+    e.target.reset(); // Reset form after submission
   };
 
   return (
@@ -73,13 +93,14 @@ export const Contact = () => {
                   }
                 >
                   <h2>Get In Touch</h2>
-                  <form onSubmit={handleSubmit}>
+                  <form ref={form} onSubmit={sendEmail}>
                     <Row>
                       <Col size={12} sm={6} className="px-1">
                         <input
                           type="text"
                           value={formDetails.firstName}
                           placeholder="First Name"
+                          name="from_fname"
                           onChange={(e) =>
                             onFormUpdate("firstName", e.target.value)
                           }
@@ -88,8 +109,9 @@ export const Contact = () => {
                       <Col size={12} sm={6} className="px-1">
                         <input
                           type="text"
-                          value={formDetails.lasttName}
+                          value={formDetails.lastName}
                           placeholder="Last Name"
+                          name="from_lname"
                           onChange={(e) =>
                             onFormUpdate("lastName", e.target.value)
                           }
@@ -100,6 +122,7 @@ export const Contact = () => {
                           type="email"
                           value={formDetails.email}
                           placeholder="Email Address"
+                          name="from_email"
                           onChange={(e) =>
                             onFormUpdate("email", e.target.value)
                           }
@@ -110,6 +133,7 @@ export const Contact = () => {
                           type="tel"
                           value={formDetails.phone}
                           placeholder="Phone No."
+                          name="from_tel"
                           onChange={(e) =>
                             onFormUpdate("phone", e.target.value)
                           }
@@ -120,6 +144,7 @@ export const Contact = () => {
                           rows="6"
                           value={formDetails.message}
                           placeholder="Message"
+                          name="message"
                           onChange={(e) =>
                             onFormUpdate("message", e.target.value)
                           }
@@ -128,17 +153,6 @@ export const Contact = () => {
                           <span>{buttonText}</span>
                         </button>
                       </Col>
-                      {status.message && (
-                        <Col>
-                          <p
-                            className={
-                              status.success === false ? "danger" : "success"
-                            }
-                          >
-                            {status.message}
-                          </p>
-                        </Col>
-                      )}
                     </Row>
                   </form>
                 </div>

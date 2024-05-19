@@ -64,57 +64,46 @@ export const Projects = () => {
         <Row>
           <Col size={12}>
             <TrackVisibility>
-              {({ isVisible }) => (
-                <div
-                  className={
-                    isVisible ? "animate__animated animate__fadeIn" : ""
-                  }
-                >
-                  <h2>Projects</h2>
-                  <p>
-                    Showcase of my web development projects that highlight my
-                    skills and creativity. Each project demonstrates my
-                    commitment to delivering high-quality, user-friendly
-                    solutions with sleek designs and seamless functionality.
-                  </p>
-                  <Tab.Container id="projects-tabs" defaultActiveKey="first">
-                    <Nav
-                      variant="pills"
-                      className="nav-pills mb-5 justify-content-center align-items-center"
-                      id="pills-tab"
-                    >
-                      <Nav.Item>
-                        <Nav.Link eventKey="first">Web Development</Nav.Link>
-                      </Nav.Item>
+              <div>
+                <h2>Projects</h2>
+                <p>
+                  Showcase of my web development projects that highlight my
+                  skills and creativity. Each project demonstrates my commitment
+                  to delivering high-quality, user-friendly solutions with sleek
+                  designs and seamless functionality.
+                </p>
+                <Tab.Container id="projects-tabs" defaultActiveKey="first">
+                  <Nav
+                    variant="pills"
+                    className="nav-pills mb-5 justify-content-center align-items-center"
+                    id="pills-tab"
+                  >
+                    <Nav.Item>
+                      <Nav.Link eventKey="first">Web Development</Nav.Link>
+                    </Nav.Item>
 
-                      <Nav.Item>
-                        <Nav.Link eventKey="second">UI/UX Development</Nav.Link>
-                      </Nav.Item>
-                    </Nav>
-                    <Tab.Content
-                      id="slideInUp"
-                      className={
-                        isVisible ? "animate__animated animate__slideInUp" : ""
-                      }
-                    >
-                      <Tab.Pane eventKey="first">
-                        <Row>
-                          {webProjects.map((project, index) => {
-                            return <ProjectCard key={index} {...project} />;
-                          })}
-                        </Row>
-                      </Tab.Pane>
-                      <Tab.Pane eventKey="second">
-                        <Row>
-                          {uiProjects.map((project, index) => {
-                            return <ProjectCard key={index} {...project} />;
-                          })}
-                        </Row>
-                      </Tab.Pane>
-                    </Tab.Content>
-                  </Tab.Container>
-                </div>
-              )}
+                    <Nav.Item>
+                      <Nav.Link eventKey="second">UI/UX Development</Nav.Link>
+                    </Nav.Item>
+                  </Nav>
+                  <Tab.Content>
+                    <Tab.Pane eventKey="first">
+                      <Row>
+                        {webProjects.map((project, index) => {
+                          return <ProjectCard key={index} {...project} />;
+                        })}
+                      </Row>
+                    </Tab.Pane>
+                    <Tab.Pane eventKey="second">
+                      <Row>
+                        {uiProjects.map((project, index) => {
+                          return <ProjectCard key={index} {...project} />;
+                        })}
+                      </Row>
+                    </Tab.Pane>
+                  </Tab.Content>
+                </Tab.Container>
+              </div>
             </TrackVisibility>
           </Col>
         </Row>
