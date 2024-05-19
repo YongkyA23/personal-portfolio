@@ -10,7 +10,7 @@ Built using:
 - CSS framework: React-bootstrap
 - CSS animations library: Animate.css
 
-##Live View: (https://yongkyanthony.vercel.app/)
+## Live View: (https://yongkyanthony.vercel.app/)
 
 ### `npm start`
 
