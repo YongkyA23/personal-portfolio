@@ -36,6 +36,17 @@ describe('validateContent', () => {
     c.projects[1].id = c.projects[0].id;
     expect(validateContent(c)).toContain('projects[1].id');
   });
+  it('accepts a screenshot path, an https link or nothing, and refuses anything else', () => {
+    const c = clone();
+    for (const ok of ['/previews/qir.webp', 'https://cdn.example.com/a.png', '', undefined]) {
+      c.projects[0].shot = ok;
+      expect(validateContent(c)).toBeNull();
+    }
+    for (const bad of ['javascript:alert(1)', 'http://plain.example.com/a.png', '//evil.example.com/a.png', '/a b.png', '/a").png']) {
+      c.projects[0].shot = bad;
+      expect(validateContent(c)).toContain('projects[0].shot');
+    }
+  });
   it('rejects a project url with a scheme', () => {
     const c = clone();
     c.projects[0].url = 'https://empuanapp.id';

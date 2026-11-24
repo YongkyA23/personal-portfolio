@@ -107,10 +107,13 @@ export const Work = memo(function Work({ projects, secret, active, onOpenCase }:
     isPhone: s.type === 'phone',
     isTerm: s.type === 'term',
     lines: (s.lines ?? []).map(([t, bright]) => ({ t, c: bright ? '#EDEDED' : '#8F8F8F' })),
+    shot: s.shot || '',
+    // Features beside the phone, lit one after another in step with the scrolling screenshot.
+    features: s.built.slice(0, 3).map((t, i, all) => ({ t, d: `${(i * 12) / all.length}s` })),
   };
 
   const hovered = hoverId ? projects.find((p) => p.id === hoverId) : undefined;
-  const fl = hovered ? { op: 1, sc: 1, name: hovered.name, status: hovered.status } : { op: 0, sc: 0.85, name: '', status: '' };
+  const fl = hovered ? { op: 1, sc: 1, name: hovered.name, status: hovered.status, shot: hovered.shot || '' } : { op: 0, sc: 0.85, name: '', status: '', shot: '' };
   const leaveP = useCallback(() => setHoverId(null), []);
   const openSel = () => {
     setHoverId(null);
@@ -157,8 +160,9 @@ export const Work = memo(function Work({ projects, secret, active, onOpenCase }:
             </span>
 
             {sel.isWeb && (<>
-    <span aria-hidden="true" style={sx(`position: absolute; z-index: 2; left: 6%; right: 6%; bottom: 0; height: 58%; border: 1px solid #2A2A2A; border-bottom: 0; border-radius: 12px 12px 0 0; background: #0B0B0B; overflow: hidden; display: flex; flex-direction: column; animation: ${anim} .7s cubic-bezier(.2,.8,.2,1) .1s both`)}>
-    <span style={sx(`height: 24px; flex: none; display: flex; align-items: center; gap: 5px; padding: 0 10px; border-bottom: 1px solid #1C1C1C`)}><span style={sx(`width: 6px; height: 6px; border-radius: 50%; background: #333333`)}></span><span style={sx(`width: 6px; height: 6px; border-radius: 50%; background: #333333`)}></span><span style={sx(`width: 6px; height: 6px; border-radius: 50%; background: #333333`)}></span><span className="dk-skel" style={sx(`height: 8px; width: 30%; margin-left: 12px`)}></span></span>
+    <span aria-hidden="true" style={sx(`position: absolute; z-index: 2; left: 6%; right: 6%; bottom: 0; height: ${sel.shot ? '66%' : '58%'}; border: 1px solid #2A2A2A; border-bottom: 0; border-radius: 12px 12px 0 0; background: #0B0B0B; overflow: hidden; display: flex; flex-direction: column; animation: ${anim} .7s cubic-bezier(.2,.8,.2,1) .1s both`)}>
+    <span style={sx(`height: 24px; flex: none; display: flex; align-items: center; gap: 5px; padding: 0 10px; border-bottom: 1px solid #1C1C1C`)}><span style={sx(`width: 6px; height: 6px; border-radius: 50%; background: #333333`)}></span><span style={sx(`width: 6px; height: 6px; border-radius: 50%; background: #333333`)}></span><span style={sx(`width: 6px; height: 6px; border-radius: 50%; background: #333333`)}></span>{sel.shot ? (<span className="pv-url">{sel.host}</span>) : (<span className="dk-skel" style={sx(`height: 8px; width: 30%; margin-left: 12px`)}></span>)}</span>
+    {sel.shot ? (<span className="pv-screen"><img key={sel.shot} className="pv-shot" src={sel.shot} alt="" loading="lazy" decoding="async" /></span>) : (<>
     <span style={sx(`flex-grow: 1; display: flex; gap: 10px; padding: 10px; min-height: 0`)}>
     <span style={sx(`flex: 0 0 16%; display: flex; flex-direction: column; gap: 7px`)}><span className="dk-skel" style={sx(`height: 8px; width: 80%`)}></span><span className="dk-skel" style={sx(`height: 8px; width: 60%`)}></span><span className="dk-skel" style={sx(`height: 8px; width: 70%`)}></span><span className="dk-skel" style={sx(`height: 8px; width: 50%`)}></span></span>
     <span style={sx(`flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px`)}>
@@ -168,11 +172,13 @@ export const Work = memo(function Work({ projects, secret, active, onOpenCase }:
     </span>
     </span>
     </span>
+    </>)}
     </span>
     </>)}
 
     {sel.isPhone && (<>
-    <span aria-hidden="true" style={sx(`position: absolute; z-index: 2; right: 10%; bottom: 0; width: 26%; height: 80%; border: 1px solid #2E2E2E; border-bottom: 0; border-radius: 26px 26px 0 0; background: #0B0B0B; overflow: hidden; padding: 10px 8px 0; box-sizing: border-box; animation: ${anim} .7s cubic-bezier(.2,.8,.2,1) .1s both`)}>
+    <span aria-hidden="true" className={sel.shot ? "pv-phone" : undefined} style={sx(`position: absolute; z-index: 2; right: 10%; bottom: 0; width: 26%; height: 80%; border: 1px solid #2E2E2E; border-bottom: 0; border-radius: 26px 26px 0 0; background: #0B0B0B; overflow: hidden; padding: ${sel.shot ? '5px 5px 0' : '10px 8px 0'}; box-sizing: border-box; animation: ${anim} .7s cubic-bezier(.2,.8,.2,1) .1s both`)}>
+    {sel.shot ? (<span className="pv-screen is-phone"><img key={sel.shot} className="pv-shot" src={sel.shot} alt="" loading="lazy" decoding="async" /><span className="pv-notch"></span></span>) : (<>
     <span style={sx(`display: block; width: 34%; height: 6px; border-radius: 6px; background: #1E1E1E; margin: 0 auto 10px`)}></span>
     <span style={sx(`display: flex; flex-direction: column; gap: 7px; animation: dk-scrollui 7s ease-in-out infinite alternate`)}>
     <span className="dk-skel" style={sx(`height: 10px; width: 55%`)}></span>
@@ -183,8 +189,10 @@ export const Work = memo(function Work({ projects, secret, active, onOpenCase }:
     <span className="dk-skel" style={sx(`height: 10px; width: 70%`)}></span>
     <span className="dk-skel" style={sx(`height: 56px; border-radius: 12px`)}></span>
     </span>
+    </>)}
     </span>
-    <span aria-hidden="true" style={sx(`position: absolute; z-index: 2; left: 6%; bottom: 14%; width: 46%; display: flex; flex-direction: column; gap: 8px`)}><span className="dk-skel" style={sx(`height: 10px; width: 90%`)}></span><span className="dk-skel" style={sx(`height: 10px; width: 70%`)}></span><span className="dk-skel" style={sx(`height: 10px; width: 80%`)}></span></span>
+    {sel.shot ? (<span aria-hidden="true" className="pv-features">{sel.features.map((f, i) => (<Fragment key={i}><span style={sx(`animation-delay: ${f.d}`)}>{f.t}</span></Fragment>))}</span>) : (
+    <span aria-hidden="true" style={sx(`position: absolute; z-index: 2; left: 6%; bottom: 14%; width: 46%; display: flex; flex-direction: column; gap: 8px`)}><span className="dk-skel" style={sx(`height: 10px; width: 90%`)}></span><span className="dk-skel" style={sx(`height: 10px; width: 70%`)}></span><span className="dk-skel" style={sx(`height: 10px; width: 80%`)}></span></span>)}
     </>)}
 
     {sel.isTerm && (<>
@@ -217,8 +225,8 @@ export const Work = memo(function Work({ projects, secret, active, onOpenCase }:
       {createPortal(
         <div className="dk-float" aria-hidden="true" ref={registerFloat}>
         <div style={sx(`opacity: ${fl.op}; transform: scale(${fl.sc}) rotate(-3deg); transform-origin: top left; transition: opacity .25s ease, transform .35s cubic-bezier(.2,.8,.2,1); border-radius: 16px; border: 1px solid #2A2A2A; background: #0E0E0E; box-shadow: 0 24px 60px rgba(0,0,0,0.6); padding: 10px; display: flex; flex-direction: column; gap: 10px`)}>
-        <div style={sx(`aspect-ratio: 16 / 10; border-radius: 10px; background: radial-gradient(#1E1E1E 1px, transparent 1px) 0 0/14px 14px, #090909; border: 1px solid #1C1C1C; padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-end; gap: 6px`)}>
-        <div className="dk-skel" style={sx(`height: 7px; width: 70%`)}></div><div className="dk-skel" style={sx(`height: 7px; width: 45%`)}></div><div className="dk-skel" style={sx(`height: 28px`)}></div>
+        <div style={sx(`position: relative; aspect-ratio: 16 / 10; border-radius: 10px; background: radial-gradient(#1E1E1E 1px, transparent 1px) 0 0/14px 14px, #090909; border: 1px solid #1C1C1C; padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: flex-end; gap: 6px; overflow: hidden`)}>
+        {fl.shot ? (<img className="pv-thumb" src={fl.shot} alt="" decoding="async" />) : (<><div className="dk-skel" style={sx(`height: 7px; width: 70%`)}></div><div className="dk-skel" style={sx(`height: 7px; width: 45%`)}></div><div className="dk-skel" style={sx(`height: 28px`)}></div></>)}
         </div>
         <div style={sx(`display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 0 4px 2px`)}><span style={sx(`font-weight: 600; font-size: 15px; letter-spacing: -0.02em`)}>{fl.name}</span><span style={sx(`font-family: var(--mono); font-size: 10px; color: #9A9A9A`)}>{fl.status}</span></div>
         </div>

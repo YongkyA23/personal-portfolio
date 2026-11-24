@@ -18,6 +18,8 @@ export interface Project {
   outcome: string[];
   /** Terminal preview lines: [text, 1 for bright / 0 for dim]. */
   lines?: Array<[string, 0 | 1]>;
+  /** Full-page screenshot shown scrolling inside the preview frame: a /path in public/ or an https URL. */
+  shot?: string;
 }
 
 export interface Experience {

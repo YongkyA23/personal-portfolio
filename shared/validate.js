@@ -44,7 +44,10 @@ export function validateContent(c) {
     for (const k of ['stack', 'built', 'outcome']) {
       if (!isStrArr(x[k])) return `${at}.${k} must be a list of strings`;
     }
-    if (x.lines !== undefined && !(Array.isArray(x.lines) && x.lines.every((l) => Array.isArray(l) && isStr(l[0]) && (l[1] === 0 || l[1] === 1)))) {
+    if (x.shot !== undefined && !(isStr(x.shot) && /^(\/(?!\/)[^\s"'()]*|https:\/\/[^\s"'()]+)?$/.test(x.shot))) {
+      return `${at}.shot must be empty, a path starting with / or an https URL`;
+    }
+    if (x.lines !== undefined &&!(Array.isArray(x.lines) && x.lines.every((l) => Array.isArray(l) && isStr(l[0]) && (l[1] === 0 || l[1] === 1)))) {
       return `${at}.lines entries must look like ["text", 0 or 1]`;
     }
   }

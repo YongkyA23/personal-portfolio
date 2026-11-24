@@ -269,6 +269,7 @@ const PROJECT: Field[] = [
   { k: 'built', label: 'What I built', kind: 'lines' },
   { k: 'how', label: 'How', kind: 'area' },
   { k: 'outcome', label: 'Outcome', kind: 'lines' },
+  { k: 'shot', label: 'Screenshot', kind: 'text', hint: 'A tall full-page image, e.g. /previews/qir.webp or an https:// link. Scrolls inside the preview; empty shows the placeholder.' },
   { k: 'lines', label: 'Terminal preview', kind: 'term', hint: 'Only used when Preview is “term”.' },
 ];
 

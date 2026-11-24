@@ -37,7 +37,7 @@ export function createApp({ store, seed, admin, distDir, trustProxy }) {
           scriptSrc: ["'self'"],
           // React writes inline style attributes; there are no inline <style> or <script> tags.
           styleSrc: ["'self'", "'unsafe-inline'"],
-          imgSrc: ["'self'", 'data:'],
+          imgSrc: ["'self'", 'data:', 'https:'],
           fontSrc: ["'self'"],
           connectSrc: ["'self'"],
           objectSrc: ["'none'"],

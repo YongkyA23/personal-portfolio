@@ -218,3 +218,26 @@ button{cursor:pointer}
 .dk-count{animation:none}
 .dk-hold,.dk-hold.is-holding{transition:none}
 }
+
+/* project previews: real full-page screenshots scrolling inside the browser / phone frames.
+   Greyscale to sit in the monochrome page; the colour comes back on hover and in the case study. */
+.pv-url{margin-left:10px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--mono);font-size:10px;color:#8A8A8A}
+.pv-screen{position:relative;display:block;flex:1 1 auto;min-height:0;overflow:hidden;container-type:size;background:#0B0B0B}
+.pv-screen.is-phone{height:100%;border-radius:21px 21px 0 0}
+.pv-shot{display:block;width:100%;height:auto;filter:grayscale(1) brightness(.85) contrast(1.05);transition:filter .6s ease;will-change:transform;animation:pv-scroll 22s cubic-bezier(.45,0,.55,1) infinite alternate}
+@keyframes pv-scroll{0%,8%{transform:translateY(0)}92%,100%{transform:translateY(calc(-100% + 100cqh))}}
+button:hover .pv-shot,button:focus-visible .pv-shot,.pv-case .pv-shot{filter:none}
+.pv-notch{position:absolute;z-index:1;top:6px;left:50%;width:34%;height:6px;transform:translateX(-50%);border-radius:6px;background:#050505}
+.pv-features{position:absolute;z-index:2;left:6%;bottom:12%;width:52%;display:flex;flex-direction:column;gap:10px;font-family:var(--mono);font-size:12px;line-height:1.35;color:#5A5A5A}
+.pv-features>span{display:flex;gap:10px;align-items:baseline;animation:pv-feat 12s ease infinite}
+.pv-features>span::before{content:'';flex:none;width:6px;height:6px;border-radius:50%;background:currentColor;transform:translateY(-1px)}
+@keyframes pv-feat{0%,30%{color:#EDEDED}38%,100%{color:#5A5A5A}}
+.pv-thumb{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top;filter:grayscale(1) brightness(.9)}
+.pv-case{position:absolute;left:8%;right:8%;bottom:0;height:82%;border:1px solid #2A2A2A;border-bottom:0;border-radius:16px 16px 0 0;background:#0B0B0B;overflow:hidden;display:flex;flex-direction:column}
+.pv-case.is-phone{left:50%;right:auto;width:min(30%,300px);height:90%;transform:translateX(-50%);border-radius:40px 40px 0 0;padding:8px 8px 0;box-sizing:border-box}
+.pv-case.is-phone .pv-screen{border-radius:32px 32px 0 0}
+.pv-case-bar{height:34px;flex:none;display:flex;align-items:center;gap:6px;padding:0 14px;border-bottom:1px solid #1C1C1C}
+.pv-case-bar>span:not(.pv-url){width:8px;height:8px;border-radius:50%;background:#333}
+@media (prefers-reduced-motion: reduce){.pv-shot,.pv-features>span{animation:none}}
+/* small preview boxes (phones): a bigger phone, no feature list beside it */
+@media (max-width:600px){.pv-phone{width:40% !important;right:8% !important;height:86% !important}.pv-features{display:none}}
