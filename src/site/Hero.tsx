@@ -27,7 +27,7 @@ export const Hero = memo(function Hero({ profile, d, kickerRun, onPalette }: Pro
   const openPal = onPalette;
   const last = profile.stats.length - 1;
   return (
-    <section id="overview" onMouseMove={spot} className="dk-spot" style={sx(`position: relative; overflow: hidden`)}>
+    <section id="overview" onMouseMove={spot} className="dk-spot" style={sx(`position: relative; overflow: clip`)}>
     <div aria-hidden="true" className="dk-para" style={sx(`position: absolute; right: -6%; top: 4%; font-weight: 600; font-size: clamp(260px, 36vw, 520px); line-height: 0.8; letter-spacing: -0.08em; color: transparent; -webkit-text-stroke: 1px #1E1E1E; pointer-events: none; z-index: 0`)}>{profile.initials}</div>
     <div aria-hidden="true" className="dk-para" style={sx(`position: absolute; left: 10%; top: -20%; width: 720px; height: 720px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,0.06), rgba(255,255,255,0) 62%); pointer-events: none; z-index: 0`)}></div>
     <div aria-hidden="true" style={sx(`position: absolute; inset: 0; background: radial-gradient(#161616 1px, transparent 1px) 0 0/28px 28px; -webkit-mask: linear-gradient(180deg, #000, transparent 85%); mask: linear-gradient(180deg, #000, transparent 85%); pointer-events: none; z-index: 0`)}></div>

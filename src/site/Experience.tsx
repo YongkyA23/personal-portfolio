@@ -23,7 +23,7 @@ export const Experience = memo(function Experience({ items, active }: Props) {
     if (!sec || !pin || !track) return;
 
     const layout = () => {
-      const on = supportsScrollTimeline() && window.innerWidth > 820 && !prefersReducedMotion();
+      const on = supportsScrollTimeline() && !prefersReducedMotion();
       sec.classList.toggle('is-on', on);
       if (!on) {
         sec.style.height = '';
