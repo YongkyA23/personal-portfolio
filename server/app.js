@@ -46,6 +46,8 @@ export function createApp({ store, seed, adminToken, distDir, trustProxy }) {
           frameAncestors: ["'none'"],
           baseUri: ["'self'"],
           formAction: ["'self'"],
+          // Do not force HTTPS for sub-resources: the site must also work over plain HTTP before a certificate is installed.
+          upgradeInsecureRequests: null,
         },
       },
     }),
