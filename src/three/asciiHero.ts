@@ -20,6 +20,7 @@ import {
 } from 'three';
 import { AsciiEffect } from 'three/examples/jsm/effects/AsciiEffect.js';
 import { TessellateModifier } from 'three/examples/jsm/modifiers/TessellateModifier.js';
+import { createTiltAim } from '../lib/tilt';
 
 /** "Y" and "A" as two extruded outlines (no font file), split into small triangles so they scatter finely. */
 function monogram(): BufferGeometry {
@@ -122,10 +123,12 @@ export function mountAsciiHero(host: HTMLElement, hero: HTMLElement): AsciiHero 
     aimX = 0;
     aimY = 0;
   };
+  const tilt = createTiltAim();
   const onTilt = (e: DeviceOrientationEvent) => {
-    if (e.gamma == null || e.beta == null) return;
-    aimX = Math.max(-1, Math.min(1, e.gamma / 30));
-    aimY = Math.max(-1, Math.min(1, (e.beta - 45) / 30));
+    const aim = tilt(e.beta, e.gamma, screen.orientation?.angle ?? 0);
+    if (!aim) return;
+    aimX = aim.x;
+    aimY = aim.y;
   };
   hero.addEventListener('pointermove', onPointer);
   hero.addEventListener('pointerleave', onLeave);
@@ -142,8 +145,9 @@ export function mountAsciiHero(host: HTMLElement, hero: HTMLElement): AsciiHero 
     const t = now / 1000;
     const ty = (still ? 0.35 : Math.sin(t * 0.5) * 0.35) + aimX * 0.7;
     const tx = (still ? -0.12 : Math.sin(t * 0.37) * 0.12) + aimY * 0.45;
-    rx += (tx - rx) * (still ? 1 : 0.08);
-    ry += (ty - ry) * (still ? 1 : 0.08);
+    const k = still ? 1 : phone ? 0.05 : 0.08;
+    rx += (tx - rx) * k;
+    ry += (ty - ry) * k;
     mesh.rotation.set(rx, ry, 0);
     scatter(still ? 0 : progress());
     effect.render(scene, camera);
@@ -151,8 +155,13 @@ export function mountAsciiHero(host: HTMLElement, hero: HTMLElement): AsciiHero 
 
   let raf = 0;
   let running = false;
+  // Phones redraw the character grid at ~30 fps: the same look, half the layout work while scrolling.
+  let lastDraw = 0;
   const loop = (now: number) => {
-    draw(now);
+    if (!phone || now - lastDraw > 30) {
+      lastDraw = now;
+      draw(now);
+    }
     if (running) raf = requestAnimationFrame(loop);
   };
   const io = new IntersectionObserver(([entry]) => {

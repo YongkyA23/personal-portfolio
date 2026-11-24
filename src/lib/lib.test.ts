@@ -172,3 +172,21 @@ describe('draftPrd', () => {
     expect(draftPrd({ name: '', contact: '', message: '' })).toMatchObject({ title: 'Untitled project', timeline: 'tbd', size: '…' });
   });
 });
+
+describe('tilt aim', () => {
+  it('treats the first pose as neutral and ignores tremor', async () => {
+    const { createTiltAim } = await import('./tilt');
+    const aim = createTiltAim();
+    expect(aim(70, 3, 0)).toEqual({ x: 0, y: 0 }); // held upright: neutral, not "tilted 25°"
+    expect(aim(72, 5, 0)).toEqual({ x: 0, y: 0 }); // tremor inside the dead zone
+    const tilted = aim(70, 25, 0)!;
+    expect(tilted.x).toBeGreaterThan(0.5); // a real sideways tilt steers
+    expect(aim(null, null, 0)).toBeNull();
+  });
+  it('follows the screen axes in landscape', async () => {
+    const { createTiltAim } = await import('./tilt');
+    const aim = createTiltAim();
+    aim(0, -80, 90); // neutral in landscape
+    expect(aim(20, -80, 90)!.x).toBeGreaterThan(0.3); // beta is "sideways" when rotated 90°
+  });
+});
