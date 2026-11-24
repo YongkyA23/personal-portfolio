@@ -1,32 +1,91 @@
-import { Fragment, memo, useState } from 'react';
+import { Fragment, memo, useEffect, useRef, useState, type PointerEvent } from 'react';
 import { sx } from '../lib/css';
 import type { Profile } from '../content/types';
 import { SECTIONS, type SectionId } from './icons';
 import { Scramble } from './Scramble';
 
-// Ball-chain beads of the flashlight pull cord, top to bottom.
-const BEADS = [10, 16, 22, 28, 34, 40, 45];
+// Flashlight pull cord: how far it stretches (px) and how far it must be pulled to switch.
+const PULL_MAX = 48;
+const PULL_TRIGGER = 22;
 
 interface Props {
   profile: Profile;
   enterDelay: string;
   active: SectionId;
   lamp: boolean;
-  cordFlip: boolean;
   onCord: () => void;
   onPalette: () => void;
   onTerminal: () => void;
   onReplay: () => void;
 }
 
-export const Sidebar = memo(function Sidebar({ profile, enterDelay, active, lamp, cordFlip, onCord, onPalette, onTerminal, onReplay }: Props) {
+export const Sidebar = memo(function Sidebar({ profile, enterDelay, active, lamp, onCord, onPalette, onTerminal, onReplay }: Props) {
   const [runs, setRuns] = useState<number[]>(() => SECTIONS.map(() => 0));
   const d = { side: enterDelay };
-  const pullCord = onCord;
+  const cordRef = useRef<HTMLButtonElement>(null);
+  const grip = useRef<{ x: number; y: number; moved: boolean } | null>(null);
+  const skipClick = useRef(false);
+  const skipTug = useRef(true); // no tug on first render
+
+  const setPull = (pull: number, tilt: number) => {
+    const el = cordRef.current;
+    if (!el) return;
+    el.style.setProperty('--pull', `${pull.toFixed(1)}px`);
+    el.style.setProperty('--tilt', `${tilt.toFixed(1)}deg`);
+  };
+  // Rubber band: the further you pull, the harder it gets, up to PULL_MAX.
+  const stretch = (dy: number) => PULL_MAX * (1 - Math.exp(-Math.max(0, dy) / PULL_MAX));
+
+  // Switched by a click, the keyboard or Escape: give the cord a short tug so it reads as the switch.
+  useEffect(() => {
+    if (skipTug.current) {
+      skipTug.current = false;
+      return;
+    }
+    setPull(14, 0);
+    const t = window.setTimeout(() => setPull(0, 0), 110);
+    return () => window.clearTimeout(t);
+  }, [lamp]);
+
+  const cordDown = (e: PointerEvent<HTMLButtonElement>) => {
+    if (e.button !== 0) return;
+    grip.current = { x: e.clientX, y: e.clientY, moved: false };
+    e.currentTarget.setPointerCapture(e.pointerId);
+    e.currentTarget.classList.add('is-held');
+  };
+  const cordMove = (e: PointerEvent<HTMLButtonElement>) => {
+    const g = grip.current;
+    if (!g) return;
+    const dx = e.clientX - g.x;
+    const dy = e.clientY - g.y;
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) g.moved = true;
+    setPull(stretch(dy), Math.max(-18, Math.min(18, -dx * 0.5)));
+  };
+  const cordUp = (e: PointerEvent<HTMLButtonElement>) => {
+    const g = grip.current;
+    if (!g) return;
+    grip.current = null;
+    e.currentTarget.classList.remove('is-held');
+    if (g.moved) {
+      // A drag is its own gesture: the click that follows pointerup must not toggle again.
+      skipClick.current = true;
+      if (e.type === 'pointerup' && stretch(e.clientY - g.y) >= PULL_TRIGGER) {
+        skipTug.current = true;
+        onCord();
+      }
+    }
+    setPull(0, 0);
+  };
+  const pullCord = () => {
+    if (skipClick.current) {
+      skipClick.current = false;
+      return;
+    }
+    onCord();
+  };
   const openPal = onPalette;
   const openTerm = onTerminal;
   const replay = onReplay;
-  const cordAnim = cordFlip ? 'dk-pull-a' : 'dk-pull-b';
   const nav = SECTIONS.map((s, index) => {
     const on = s.id === active;
     return {
@@ -44,20 +103,8 @@ export const Sidebar = memo(function Sidebar({ profile, enterDelay, active, lamp
   });
   return (
     <aside className="dk-side dk-side-in" style={sx(`position: sticky; top: 0; height: 100vh; flex: 0 0 264px; box-sizing: border-box; background: #0A0A0A; border-right: 1px solid #1C1C1C; padding: 24px 16px; display: flex; flex-direction: column; gap: 20px; z-index: 5; animation-delay: ${d.side}`)}>
-    <button type="button" onClick={pullCord} aria-label="Toggle flashlight mode" aria-pressed={lamp} data-cursor="Pull" className={lamp ? 'dk-cord is-on' : 'dk-cord'}>
-    <span aria-hidden="true" className="dk-cord-pull" style={sx(`animation: ${cordAnim} .7s cubic-bezier(.3,1.4,.5,1)`)}>
-    <svg width="32" height="88" viewBox="0 0 32 88" fill="none">
-    <rect className="dk-cord-mount" x="11" y="0" width="10" height="5" rx="2" />
-    {BEADS.map((y) => (
-    <circle key={y} className="dk-cord-bead" cx="16" cy={y} r="1.7" />
-    ))}
-    <g transform="translate(0 -12)">
-    <rect className="dk-cord-cap" x="13" y="60" width="6" height="6" rx="1.5" />
-    <path className="dk-cord-handle" d="M16 66c-3.2 4.6-6.5 9.8-6.5 15.2a6.5 6.5 0 0 0 13 0c0-5.4-3.3-10.6-6.500-15.200z" />
-    <path className="dk-cord-shine" d="M13.200 80.500c0-2.400 1-4.800 2.300-7" strokeLinecap="round" />
-    </g>
-    </svg>
-    </span>
+    <button ref={cordRef} type="button" onClick={pullCord} onPointerDown={cordDown} onPointerMove={cordMove} onPointerUp={cordUp} onPointerCancel={cordUp} aria-label="Toggle flashlight mode" aria-pressed={lamp} data-cursor="Pull" className={lamp ? 'dk-cord is-on' : 'dk-cord'}>
+    <span aria-hidden="true" className="dk-cord-sway"><span className="dk-cord-pull"><span className="dk-cord-line" /><span className="dk-cord-knob" /></span></span>
     </button>
 
     <div style={sx(`display: flex; align-items: center; gap: 12px; padding: 0 20px 0 8px`)}>

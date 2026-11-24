@@ -31,6 +31,21 @@ export function useSiteEffects(cursorRef: RefObject<HTMLDivElement | null>): voi
     let lastY = window.scrollY;
     let raf = 0;
 
+    let down = false;
+
+    // What is under the pointer right now. Asked every frame, not only on mousemove, because
+    // content moves under a still pointer (falling chips, scrolling) and pointer capture
+    // retargets mouse events to the capturing element.
+    const hover = (cur: HTMLDivElement) => {
+      const hit = document.elementFromPoint(mx, my);
+      const target = hit ? hit.closest(INTERACTIVE) : null;
+      const label = target?.getAttribute('data-cursor') || '';
+      if (cur.dataset.label !== label) cur.dataset.label = label;
+      cur.classList.toggle('is-hover', !!target && !label);
+      cur.classList.toggle('has-label', !!label);
+      cur.classList.toggle('is-down', down);
+    };
+
     const onMove = (e: MouseEvent) => {
       mx = e.clientX;
       my = e.clientY;
@@ -41,16 +56,11 @@ export function useSiteEffects(cursorRef: RefObject<HTMLDivElement | null>): voi
         cy = py = my;
         if (fine) root.classList.add('dk-cur-on');
       }
-      const cur = cursorRef.current;
-      if (!cur || !fine) return;
-      cur.classList.remove('is-out');
-      const target = e.target instanceof Element ? e.target.closest(INTERACTIVE) : null;
-      const label = target?.getAttribute('data-cursor') || '';
-      if (cur.dataset.label !== label) cur.dataset.label = label;
-      cur.classList.toggle('is-hover', !!target && !label);
-      cur.classList.toggle('has-label', !!label);
+      cursorRef.current?.classList.remove('is-out');
     };
     const onLeave = () => cursorRef.current?.classList.add('is-out');
+    const onDown = () => { down = true; };
+    const onUp = () => { down = false; };
 
     const magnet = () => {
       const els = document.querySelectorAll<HTMLElement>('.dk-mag');
@@ -73,12 +83,17 @@ export function useSiteEffects(cursorRef: RefObject<HTMLDivElement | null>): voi
     };
 
     const frame = () => {
-      cx += (mx - cx) * 0.24;
-      cy += (my - cy) * 0.24;
+      // While pressed the cursor sits exactly on the pointer, so it stays glued to whatever is being dragged.
+      const ease = down ? 1 : 0.24;
+      cx += (mx - cx) * ease;
+      cy += (my - cy) * ease;
       px += (mx - px) * 0.12;
       py += (my - py) * 0.12;
       const cur = cursorRef.current;
-      if (cur && fine) cur.style.transform = `translate3d(${cx.toFixed(1)}px,${cy.toFixed(1)}px,0)`;
+      if (cur && fine) {
+        cur.style.transform = `translate3d(${cx.toFixed(1)}px,${cy.toFixed(1)}px,0)`;
+        if (seen) hover(cur);
+      }
       if (floatEl) floatEl.style.transform = `translate3d(${(px + 28).toFixed(1)}px,${(py + 20).toFixed(1)}px,0)`;
       if (seen) {
         root.style.setProperty('--fx', `${cx.toFixed(0)}px`);
@@ -101,11 +116,17 @@ export function useSiteEffects(cursorRef: RefObject<HTMLDivElement | null>): voi
     };
 
     window.addEventListener('mousemove', onMove, { passive: true });
+    window.addEventListener('pointerdown', onDown, { passive: true });
+    window.addEventListener('pointerup', onUp, { passive: true });
+    window.addEventListener('pointercancel', onUp, { passive: true });
     root.addEventListener('mouseleave', onLeave);
     raf = requestAnimationFrame(frame);
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('pointerdown', onDown);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
       root.removeEventListener('mouseleave', onLeave);
       root.classList.remove('dk-cur-on');
       root.style.removeProperty('--skew');

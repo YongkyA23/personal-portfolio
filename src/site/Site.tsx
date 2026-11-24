@@ -80,7 +80,6 @@ export default function Site({ content, settled }: Props) {
   const [palette, setPalette] = useState(false);
   const [terminal, setTerminal] = useState(false);
   const [lamp, setLamp] = useState(false);
-  const [cordFlip, setCordFlip] = useState(false);
   const [caseId, setCaseId] = useState<string | null>(caseFromHash);
   const [caseFlip, setCaseFlip] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -123,7 +122,6 @@ export default function Site({ content, settled }: Props) {
   const toggleLamp = useCallback(() => {
     setPalette(false);
     setLamp((on) => !on);
-    setCordFlip((v) => !v);
   }, []);
 
   // A case study has its own URL, so it can be shared and the Back button closes it.
@@ -289,7 +287,6 @@ export default function Site({ content, settled }: Props) {
         enterDelay={delays.side}
         active={active}
         lamp={lamp}
-        cordFlip={cordFlip}
         onCord={toggleLamp}
         onPalette={openPalette}
         onTerminal={openTerminal}

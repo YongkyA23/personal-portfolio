@@ -27,7 +27,7 @@ const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v
 export function createWorld(box: HTMLElement, chips: HTMLElement[]): World {
   let W = box.clientWidth;
   let H = box.clientHeight;
-  let held: { i: number; ox: number; oy: number } | null = null;
+  let held: { i: number; ox: number; oy: number; t: number } | null = null;
 
   const bodies: Body[] = chips.map((el) => ({ el, w: el.offsetWidth, h: el.offsetHeight, x: 0, y: 0, vx: 0, vy: 0, r: 0, inside: false }));
 
@@ -107,7 +107,9 @@ export function createWorld(box: HTMLElement, chips: HTMLElement[]): World {
       const b = bodies[index];
       if (!b) return;
       const r = box.getBoundingClientRect();
-      held = { i: index, ox: clientX - r.left - b.x, oy: clientY - r.top - b.y };
+      held = { i: index, ox: clientX - r.left - b.x, oy: clientY - r.top - b.y, t: performance.now() };
+      b.vx = 0;
+      b.vy = 0;
       b.inside = true;
     },
     drag(clientX, clientY) {
@@ -116,12 +118,21 @@ export function createWorld(box: HTMLElement, chips: HTMLElement[]): World {
       const r = box.getBoundingClientRect();
       const nx = clamp(clientX - r.left - held.ox, 0, Math.max(0, W - b.w));
       const ny = clamp(clientY - r.top - held.oy, 0, Math.max(0, H - b.h));
-      b.vx = nx - b.x;
-      b.vy = ny - b.y;
+      // Velocity in px per 60 Hz frame, whatever the mouse's event rate, smoothed over a few moves.
+      const now = performance.now();
+      const k = 16.7 / Math.max(4, now - held.t);
+      held.t = now;
+      b.vx = b.vx * 0.4 + (nx - b.x) * k * 0.6;
+      b.vy = b.vy * 0.4 + (ny - b.y) * k * 0.6;
       b.x = nx;
       b.y = ny;
     },
     release() {
+      // Held still before letting go: drop it, don't fling it with the last movement.
+      if (held && performance.now() - held.t > 80) {
+        bodies[held.i].vx = 0;
+        bodies[held.i].vy = 0;
+      }
       held = null;
     },
     shake() {
