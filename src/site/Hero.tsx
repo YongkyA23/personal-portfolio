@@ -44,7 +44,7 @@ export const Hero = memo(function Hero({ profile, d, kickerRun, onPalette }: Pro
     <button type="button" onClick={openPal} className="dk-ghost dk-shine" style={sx(`width: 100%; min-height: 56px; border-radius: 16px; border: 1px solid #262626; background: #0E0E0E; color: #A8A8A8; display: flex; align-items: center; gap: 12px; padding: 0 12px 0 18px; font-size: 15px; text-align: left`)}>
     <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>
     <span style={sx(`flex-grow: 1`)}>Ask my AI agent, or jump anywhere</span>
-    <span style={sx(`font-family: var(--mono); font-size: 12px; color: #9A9A9A; border: 1px solid #262626; border-radius: 6px; padding: 3px 7px`)}>⌘ K</span>
+    <span aria-hidden="true" className="dk-kbd" style={sx(`font-family: var(--mono); font-size: 12px; color: #9A9A9A; border: 1px solid #262626; border-radius: 6px; padding: 3px 7px; white-space: nowrap`)}>⌘ K</span>
     </button>
     </div>
     <dl className="dk-enter" style={sx(`margin: 24px 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); border: 1px solid #1C1C1C; border-radius: 20px; overflow: hidden; background: rgba(7,7,7,0.6); animation-delay: ${d.dl}`)}>

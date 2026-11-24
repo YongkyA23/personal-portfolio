@@ -1,3 +1,4 @@
+import { PhoneShot } from './PhoneShot';
 import { Fragment, useEffect, useRef } from 'react';
 import { sx } from '../lib/css';
 import { useFocusTrap } from '../lib/focus';
@@ -71,10 +72,10 @@ export function CaseStudy({ project, nextName, flip, onClose, onNext }: Props) {
     </dd></div>
     </dl>
     <div style={sx(`position: relative; aspect-ratio: 16 / 8; border-radius: 24px; border: 1px solid #1C1C1C; background: radial-gradient(#1E1E1E 1px, transparent 1px) 0 0/24px 24px, #090909; overflow: hidden; display: flex; align-items: center; justify-content: center`)}>
-    {cs.shot ? (
-    <div aria-hidden="true" className={cs.phone ? 'pv-case is-phone' : 'pv-case'}>
-    {!cs.phone && (<div className="pv-case-bar"><span></span><span></span><span></span><span className="pv-url">{cs.host}</span></div>)}
-    <div className={cs.phone ? 'pv-screen is-phone' : 'pv-screen'}><img className="pv-shot" src={cs.shot} alt="" decoding="async" />{cs.phone && <span className="pv-notch"></span>}</div>
+    {cs.shot && cs.phone ? (<PhoneShot key={cs.shot} src={cs.shot} className="pv-case-phone" />) : cs.shot ? (
+    <div aria-hidden="true" className="pv-case">
+    <div className="pv-case-bar"><span></span><span></span><span></span><span className="pv-url">{cs.host}</span></div>
+    <div className="pv-screen"><img className="pv-shot" src={cs.shot} alt="" decoding="async" /></div>
     </div>
     ) : (
     <div aria-hidden="true" style={sx(`position: absolute; left: 8%; right: 8%; bottom: 0; height: 74%; border: 1px solid #2A2A2A; border-bottom: 0; border-radius: 16px 16px 0 0; background: #0B0B0B; padding: 18px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px`)}>

@@ -22,6 +22,14 @@ interface Props {
 export const Sidebar = memo(function Sidebar({ profile, enterDelay, active, lamp, onCord, onPalette, onTerminal, onReplay }: Props) {
   const [runs, setRuns] = useState<number[]>(() => SECTIONS.map(() => 0));
   const d = { side: enterDelay };
+  const navRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const strip = navRef.current;
+    const on = strip?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (!strip || !on || strip.scrollWidth <= strip.clientWidth) return;
+    strip.scrollTo({ left: on.offsetLeft - (strip.clientWidth - on.offsetWidth) / 2, behavior: 'smooth' });
+  }, [active]);
+
   const cordRef = useRef<HTMLButtonElement>(null);
   const grip = useRef<{ x: number; y: number; moved: boolean } | null>(null);
   const skipClick = useRef(false);
@@ -107,7 +115,7 @@ export const Sidebar = memo(function Sidebar({ profile, enterDelay, active, lamp
     <span aria-hidden="true" className="dk-cord-sway"><span className="dk-cord-pull"><span className="dk-cord-line" /><span className="dk-cord-knob" /></span></span>
     </button>
 
-    <div style={sx(`display: flex; align-items: center; gap: 12px; padding: 0 20px 0 8px`)}>
+    <div className="dk-side-id" style={sx(`display: flex; align-items: center; gap: 12px; padding: 0 20px 0 8px`)}>
     <span aria-hidden="true" style={sx(`width: 40px; height: 40px; border-radius: 50%; background: #EDEDED; color: #070707; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; letter-spacing: -0.02em; flex: none`)}>{profile.initials}</span>
     <div style={sx(`display: flex; flex-direction: column; min-width: 0`)}>
     <span style={sx(`font-weight: 500; font-size: 15px; letter-spacing: -0.01em`)}>{profile.name}</span>
@@ -115,20 +123,20 @@ export const Sidebar = memo(function Sidebar({ profile, enterDelay, active, lamp
     </div>
     </div>
 
-    <div style={sx(`margin: 0 8px; display: flex; align-items: center; gap: 10px; border: 1px solid #1C1C1C; border-radius: 999px; padding: 8px 14px; font-size: 13px; color: #C9C9C9`)}>
+    <div className="dk-side-avail" style={sx(`margin: 0 8px; display: flex; align-items: center; gap: 10px; border: 1px solid #1C1C1C; border-radius: 999px; padding: 8px 14px; font-size: 13px; color: #C9C9C9`)}>
     <span aria-hidden="true" style={sx(`position: relative; width: 7px; height: 7px; flex: none`)}><span style={sx(`position: absolute; inset: 0; border-radius: 50%; background: #EDEDED`)}></span><span style={sx(`position: absolute; inset: -4px; border-radius: 50%; border: 1px solid #EDEDED; animation: dk-ping 2s ease-out infinite`)}></span></span>{profile.availability}
     </div>
 
-    <div style={sx(`margin: 0 8px; display: flex; gap: 8px`)}>
-    <button type="button" onClick={openPal} className="dk-ghost" style={sx(`flex-grow: 1; min-width: 0; min-height: 44px; border-radius: 12px; border: 1px solid #1C1C1C; background: #0E0E0E; color: #9A9A9A; display: flex; align-items: center; gap: 8px; padding: 0 10px 0 12px; font-size: 14px`)}>
+    <div className="dk-side-actions" style={sx(`margin: 0 8px; display: flex; gap: 8px`)}>
+    <button type="button" onClick={openPal} aria-label="Search or ask" className="dk-ghost" style={sx(`flex-grow: 1; min-width: 0; min-height: 44px; border-radius: 12px; border: 1px solid #1C1C1C; background: #0E0E0E; color: #9A9A9A; display: flex; align-items: center; gap: 8px; padding: 0 10px 0 12px; font-size: 14px`)}>
     <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
-    <span style={sx(`flex-grow: 1; text-align: left; white-space: nowrap; font-size: 13px`)}>Search / ask</span>
-    <span style={sx(`font-family: var(--mono); font-size: 11px; border: 1px solid #262626; border-radius: 6px; padding: 2px 6px`)}>⌘K</span>
+    <span aria-hidden="true" className="dk-side-hide" style={sx(`flex-grow: 1; text-align: left; white-space: nowrap; font-size: 13px`)}>Search / ask</span>
+    <span aria-hidden="true" className="dk-side-hide" style={sx(`font-family: var(--mono); font-size: 11px; border: 1px solid #262626; border-radius: 6px; padding: 2px 6px`)}>⌘K</span>
     </button>
     <button type="button" onClick={openTerm} aria-label="Open terminal mode" className="dk-ghost dk-mag" style={sx(`width: 44px; height: 44px; flex: none; border-radius: 12px; border: 1px solid #1C1C1C; background: #0E0E0E; color: #EDEDED; display: flex; align-items: center; justify-content: center`)}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M5 7l5 5-5 5M12 17h7"/></svg></button>
     </div>
 
-    <nav aria-label="Sections" className="dk-side-nav dk-nav" style={sx(`display: flex; flex-direction: column; gap: 2px; font-size: 14px`)}>
+    <nav ref={navRef} aria-label="Sections" className="dk-side-nav dk-nav" style={sx(`display: flex; flex-direction: column; gap: 2px; font-size: 14px`)}>
     <span style={sx(`padding: 0 10px 8px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; color: #8A8A8A`)}>NAVIGATE</span>
     {nav.map((n, i) => (<Fragment key={i}>
     <a href={n.href} onMouseEnter={n.hover} aria-current={n.current} aria-label={n.label} style={sx(`position: relative; display: flex; align-items: center; gap: 12px; min-height: 40px; padding: 0 10px; border-radius: 10px; text-decoration: none; background: ${n.bg}; color: ${n.color}; transition: background .3s ease, color .3s ease`)}>

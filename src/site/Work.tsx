@@ -5,6 +5,7 @@ import type { Project, ProjectCategory } from '../content/types';
 import { registerFloat } from './effects';
 import { tilt, untilt } from './pointer';
 import { Scramble } from './Scramble';
+import { PhoneShot } from './PhoneShot';
 
 type Filter = 'all' | ProjectCategory;
 
@@ -177,8 +178,7 @@ export const Work = memo(function Work({ projects, secret, active, onOpenCase }:
     </>)}
 
     {sel.isPhone && (<>
-    <span aria-hidden="true" className={sel.shot ? "pv-phone" : undefined} style={sx(`position: absolute; z-index: 2; right: 10%; bottom: 0; width: 26%; height: 80%; border: 1px solid #2E2E2E; border-bottom: 0; border-radius: 26px 26px 0 0; background: #0B0B0B; overflow: hidden; padding: ${sel.shot ? '5px 5px 0' : '10px 8px 0'}; box-sizing: border-box; animation: ${anim} .7s cubic-bezier(.2,.8,.2,1) .1s both`)}>
-    {sel.shot ? (<span className="pv-screen is-phone"><img key={sel.shot} className="pv-shot" src={sel.shot} alt="" loading="lazy" decoding="async" /><span className="pv-notch"></span></span>) : (<>
+    {sel.shot ? (<PhoneShot key={sel.shot} src={sel.shot} className="pv-phone" anim={anim} />) : (<span aria-hidden="true" style={sx(`position: absolute; z-index: 2; right: 10%; bottom: 0; width: 26%; height: 80%; border: 1px solid #2E2E2E; border-bottom: 0; border-radius: 26px 26px 0 0; background: #0B0B0B; overflow: hidden; padding: 10px 8px 0; box-sizing: border-box; animation: ${anim} .7s cubic-bezier(.2,.8,.2,1) .1s both`)}>
     <span style={sx(`display: block; width: 34%; height: 6px; border-radius: 6px; background: #1E1E1E; margin: 0 auto 10px`)}></span>
     <span style={sx(`display: flex; flex-direction: column; gap: 7px; animation: dk-scrollui 7s ease-in-out infinite alternate`)}>
     <span className="dk-skel" style={sx(`height: 10px; width: 55%`)}></span>
@@ -189,8 +189,7 @@ export const Work = memo(function Work({ projects, secret, active, onOpenCase }:
     <span className="dk-skel" style={sx(`height: 10px; width: 70%`)}></span>
     <span className="dk-skel" style={sx(`height: 56px; border-radius: 12px`)}></span>
     </span>
-    </>)}
-    </span>
+    </span>)}
     {sel.shot ? (<span aria-hidden="true" className="pv-features">{sel.features.map((f, i) => (<Fragment key={i}><span style={sx(`animation-delay: ${f.d}`)}>{f.t}</span></Fragment>))}</span>) : (
     <span aria-hidden="true" style={sx(`position: absolute; z-index: 2; left: 6%; bottom: 14%; width: 46%; display: flex; flex-direction: column; gap: 8px`)}><span className="dk-skel" style={sx(`height: 10px; width: 90%`)}></span><span className="dk-skel" style={sx(`height: 10px; width: 70%`)}></span><span className="dk-skel" style={sx(`height: 10px; width: 80%`)}></span></span>)}
     </>)}

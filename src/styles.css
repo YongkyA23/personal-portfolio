@@ -157,8 +157,6 @@ button,input{font-family:inherit}
 }
 
 @media (max-width: 820px){
-.dk-side{position:relative !important;height:auto !important;flex:1 1 100% !important;border-right:0 !important;border-bottom:1px solid #1C1C1C}
-.dk-side-nav{flex-direction:row !important;flex-wrap:wrap}
 .dk-side-foot{display:none !important}
 .dk-sticky{position:relative !important;top:auto !important}
 }
@@ -203,11 +201,6 @@ button{cursor:pointer}
 .dk-word{animation:dk-word linear both;animation-timeline:--about;animation-range:cover var(--a) cover var(--b)}
 }
 
-/* phone: the nav label gets its own row and the active bar (which sits outside the pill) is dropped */
-@media (max-width: 820px){
-.dk-side-nav>span:first-child{flex-basis:100%}
-.dk-side-nav a>span:first-child{display:none}
-}
 
 /* stack playground without motion: a plain wrapped list */
 .dk-box.is-static{height:auto !important;display:flex;flex-wrap:wrap;gap:8px;padding:56px 24px 24px}
@@ -223,21 +216,52 @@ button{cursor:pointer}
    Greyscale to sit in the monochrome page; the colour comes back on hover and in the case study. */
 .pv-url{margin-left:10px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--mono);font-size:10px;color:#8A8A8A}
 .pv-screen{position:relative;display:block;flex:1 1 auto;min-height:0;overflow:hidden;container-type:size;background:#0B0B0B}
-.pv-screen.is-phone{height:100%;border-radius:21px 21px 0 0}
 .pv-shot{display:block;width:100%;height:auto;filter:grayscale(1) brightness(.85) contrast(1.05);transition:filter .6s ease;will-change:transform;animation:pv-scroll 22s cubic-bezier(.45,0,.55,1) infinite alternate}
 @keyframes pv-scroll{0%,8%{transform:translateY(0)}92%,100%{transform:translateY(calc(-100% + 100cqh))}}
 button:hover .pv-shot,button:focus-visible .pv-shot,.pv-case .pv-shot{filter:none}
-.pv-notch{position:absolute;z-index:1;top:6px;left:50%;width:34%;height:6px;transform:translateX(-50%);border-radius:6px;background:#050505}
 .pv-features{position:absolute;z-index:2;left:6%;bottom:12%;width:52%;display:flex;flex-direction:column;gap:10px;font-family:var(--mono);font-size:12px;line-height:1.35;color:#5A5A5A}
 .pv-features>span{display:flex;gap:10px;align-items:baseline;animation:pv-feat 12s ease infinite}
 .pv-features>span::before{content:'';flex:none;width:6px;height:6px;border-radius:50%;background:currentColor;transform:translateY(-1px)}
 @keyframes pv-feat{0%,30%{color:#EDEDED}38%,100%{color:#5A5A5A}}
 .pv-thumb{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top;filter:grayscale(1) brightness(.9)}
 .pv-case{position:absolute;left:8%;right:8%;bottom:0;height:82%;border:1px solid #2A2A2A;border-bottom:0;border-radius:16px 16px 0 0;background:#0B0B0B;overflow:hidden;display:flex;flex-direction:column}
-.pv-case.is-phone{left:50%;right:auto;width:min(30%,300px);height:90%;transform:translateX(-50%);border-radius:40px 40px 0 0;padding:8px 8px 0;box-sizing:border-box}
-.pv-case.is-phone .pv-screen{border-radius:32px 32px 0 0}
 .pv-case-bar{height:34px;flex:none;display:flex;align-items:center;gap:6px;padding:0 14px;border-bottom:1px solid #1C1C1C}
 .pv-case-bar>span:not(.pv-url){width:8px;height:8px;border-radius:50%;background:#333}
 @media (prefers-reduced-motion: reduce){.pv-shot,.pv-features>span{animation:none}}
 /* small preview boxes (phones): a bigger phone, no feature list beside it */
-@media (max-width:600px){.pv-phone{width:40% !important;right:8% !important;height:86% !important}.pv-features{display:none}}
+
+/* phone device: sized by height, everything inside scales with it (container units) */
+.pv-device{position:absolute;z-index:2;display:block;aspect-ratio:418/872;container-type:size}
+.pv-device-body{position:absolute;inset:0;box-sizing:border-box;padding:3.6cqw;border-radius:16cqw;background:linear-gradient(155deg,#5a5a5a 0%,#232323 9%,#0e0e0e 45%,#141414 80%,#3a3a3a 100%);box-shadow:inset 0 0 0 .6cqw #6a6a6a,inset 0 0 0 1.6cqw #0b0b0b,0 6cqh 10cqh -2cqh rgba(0,0,0,.75)}
+.pv-device-body::before{content:'';position:absolute;right:-.9cqw;top:26%;width:1.4cqw;height:12%;border-radius:0 1cqw 1cqw 0;background:linear-gradient(90deg,#1a1a1a,#4a4a4a)}
+.pv-device-body::after{content:'';position:absolute;left:-.9cqw;top:19%;width:1.4cqw;height:7%;border-radius:1cqw 0 0 1cqw;background:linear-gradient(270deg,#1a1a1a,#4a4a4a);box-shadow:0 9cqh 0 #303030}
+.pv-device-screen{position:relative;display:block;width:100%;height:100%;overflow:hidden;border-radius:12.6cqw;background:#000;container-type:size}
+.pv-device-screen::after{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(118deg,rgba(255,255,255,.10) 0%,rgba(255,255,255,.03) 28%,transparent 42%)}
+.pv-island{position:absolute;z-index:3;top:1.5%;left:50%;width:30%;height:3.3%;transform:translateX(-50%);border-radius:999px;background:#000}
+.pv-device-screen.is-strip .pv-shot{animation:none;transition:transform .9s cubic-bezier(.76,0,.24,1),filter .6s ease}
+.pv-phone{right:9%;bottom:6%;height:84%}
+.pv-case-phone{left:50%;top:6%;height:88%;transform:translateX(-50%)}
+.pv-case-phone .pv-shot{filter:none}
+@media (max-width:600px){.pv-phone{right:7%;height:80%}.pv-features{display:none}}
+
+/* phones and narrow tablets: the sidebar becomes a slim sticky header.
+   Row 1: who + search/terminal icons. Row 2: the sections as one sideways-scrolling strip of pills. */
+@media (max-width: 820px){
+.dk-side{position:sticky !important;top:0;z-index:30;height:auto !important;flex:1 1 100% !important;display:grid !important;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px 8px !important;padding:10px 14px 10px !important;border-right:0 !important;border-bottom:1px solid #1C1C1C;background:rgba(10,10,10,.82) !important;-webkit-backdrop-filter:blur(14px) saturate(1.2);backdrop-filter:blur(14px) saturate(1.2)}
+.dk-side .dk-cord,.dk-side-avail,.dk-side-foot,.dk-side-hide{display:none !important}
+.dk-side-id{padding:0 !important;gap:10px !important;min-width:0}
+.dk-side-id>span:first-child{width:34px !important;height:34px !important;font-size:12px !important}
+.dk-side-id>div>span:first-child{font-size:14px !important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dk-side-id>div>span:last-child{font-size:12px !important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dk-side-actions{margin:0 !important;gap:6px !important}
+.dk-side-actions>button{flex:none !important;width:40px !important;height:40px !important;min-height:40px !important;padding:0 !important;justify-content:center}
+.dk-side-nav{position:relative;grid-column:1/-1;flex-direction:row !important;flex-wrap:nowrap !important;gap:4px !important;margin:0 -14px;padding:0 14px 2px;overflow-x:auto;scrollbar-width:none;-webkit-mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 28px),transparent)}
+.dk-side-nav::-webkit-scrollbar{display:none}
+.dk-side-nav>span:first-child,.dk-side-nav a>span:first-child,.dk-side-nav a>svg,.dk-side-nav a>span:last-child{display:none}
+.dk-side-nav a{flex:none;min-height:34px !important;padding:0 14px !important;border-radius:999px !important;border:1px solid #1C1C1C;white-space:nowrap;font-size:13px}
+.dk-side-nav a[aria-current="page"]{background:#EDEDED !important;color:#070707 !important;border-color:#EDEDED}
+
+/* jump links land below the sticky header; a keyboard shortcut means nothing on a touch screen */
+section[id]{scroll-margin-top:118px}
+}
+@media (hover:none){.dk-kbd{display:none}}
