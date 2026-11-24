@@ -1,0 +1,143 @@
+/** Tiny box-stacking simulation for the stack playground: gravity, walls, AABB separation, drag and throw. */
+
+interface Body {
+  el: HTMLElement;
+  w: number;
+  h: number;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  r: number;
+  inside: boolean;
+}
+
+export interface World {
+  step(): void;
+  grab(index: number, clientX: number, clientY: number): void;
+  drag(clientX: number, clientY: number): void;
+  release(): void;
+  shake(): void;
+  drop(): void;
+  resize(): void;
+}
+
+const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+
+export function createWorld(box: HTMLElement, chips: HTMLElement[]): World {
+  let W = box.clientWidth;
+  let H = box.clientHeight;
+  let held: { i: number; ox: number; oy: number } | null = null;
+
+  const bodies: Body[] = chips.map((el) => ({ el, w: el.offsetWidth, h: el.offsetHeight, x: 0, y: 0, vx: 0, vy: 0, r: 0, inside: false }));
+
+  const scatter = () => {
+    bodies.forEach((b, i) => {
+      b.x = Math.random() * Math.max(1, W - b.w);
+      b.y = -b.h - i * 34 - Math.random() * 30;
+      b.vx = (Math.random() - 0.5) * 3;
+      b.vy = 0;
+      b.inside = false;
+    });
+  };
+  scatter();
+
+  const separate = (grabbed: number) => {
+    for (let i = 0; i < bodies.length; i++) {
+      for (let j = i + 1; j < bodies.length; j++) {
+        const a = bodies[i], c = bodies[j];
+        const dx = a.x + a.w / 2 - (c.x + c.w / 2);
+        const dy = a.y + a.h / 2 - (c.y + c.h / 2);
+        const ox = (a.w + c.w) / 2 - Math.abs(dx);
+        const oy = (a.h + c.h) / 2 - Math.abs(dy);
+        if (ox <= 0 || oy <= 0) continue;
+        const wa = i === grabbed ? 0 : j === grabbed ? 1 : 0.5;
+        const wc = j === grabbed ? 0 : i === grabbed ? 1 : 0.5;
+        if (ox < oy) {
+          const s = dx < 0 ? -1 : 1;
+          a.x += s * ox * wa;
+          c.x -= s * ox * wc;
+          const m = (a.vx + c.vx) / 2;
+          if (i !== grabbed) a.vx = m * 0.8;
+          if (j !== grabbed) c.vx = m * 0.8;
+        } else {
+          const s = dy < 0 ? -1 : 1;
+          a.y += s * oy * wa;
+          c.y -= s * oy * wc;
+          const m = (a.vy + c.vy) / 2;
+          if (i !== grabbed) a.vy = m * 0.5;
+          if (j !== grabbed) c.vy = m * 0.5;
+        }
+      }
+    }
+  };
+
+  return {
+    step() {
+      const grabbed = held ? held.i : -1;
+      for (let i = 0; i < bodies.length; i++) {
+        if (i === grabbed) continue;
+        const b = bodies[i];
+        b.vy += 0.6;
+        b.vx *= 0.995;
+        b.vx = clamp(b.vx, -40, 40);
+        b.vy = clamp(b.vy, -40, 40);
+        b.x += b.vx;
+        b.y += b.vy;
+        if (b.x < 0) { b.x = 0; b.vx = -b.vx * 0.5; }
+        if (b.x + b.w > W) { b.x = W - b.w; b.vx = -b.vx * 0.5; }
+        if (b.y + b.h > H) {
+          b.y = H - b.h;
+          b.vy = -b.vy * 0.3;
+          b.vx *= 0.9;
+          if (Math.abs(b.vy) < 0.7) b.vy = 0;
+        }
+        if (b.y >= 0) b.inside = true;
+        if (b.inside && b.y < 0) { b.y = 0; b.vy = -b.vy * 0.4; }
+      }
+      for (let pass = 0; pass < 3; pass++) separate(grabbed);
+      for (const b of bodies) {
+        if (b.y + b.h > H) b.y = H - b.h;
+        b.x = clamp(b.x, 0, Math.max(0, W - b.w));
+        b.r += (clamp(b.vx * 1.4, -16, 16) - b.r) * 0.15;
+        b.el.style.transform = `translate3d(${b.x.toFixed(1)}px,${b.y.toFixed(1)}px,0) rotate(${b.r.toFixed(1)}deg)`;
+      }
+    },
+    grab(index, clientX, clientY) {
+      const b = bodies[index];
+      if (!b) return;
+      const r = box.getBoundingClientRect();
+      held = { i: index, ox: clientX - r.left - b.x, oy: clientY - r.top - b.y };
+      b.inside = true;
+    },
+    drag(clientX, clientY) {
+      if (!held) return;
+      const b = bodies[held.i];
+      const r = box.getBoundingClientRect();
+      const nx = clamp(clientX - r.left - held.ox, 0, Math.max(0, W - b.w));
+      const ny = clamp(clientY - r.top - held.oy, 0, Math.max(0, H - b.h));
+      b.vx = nx - b.x;
+      b.vy = ny - b.y;
+      b.x = nx;
+      b.y = ny;
+    },
+    release() {
+      held = null;
+    },
+    shake() {
+      for (const b of bodies) {
+        b.vy -= 12 + Math.random() * 12;
+        b.vx += (Math.random() - 0.5) * 22;
+      }
+    },
+    drop: scatter,
+    resize() {
+      W = box.clientWidth;
+      H = box.clientHeight;
+      for (const b of bodies) {
+        b.w = b.el.offsetWidth;
+        b.h = b.el.offsetHeight;
+      }
+    },
+  };
+}
