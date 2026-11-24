@@ -1,7 +1,9 @@
-import { memo, useState, type ChangeEvent, type FormEvent } from 'react';
+import { Fragment, memo, useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
 import { sx } from '../lib/css';
 import type { Profile } from '../content/types';
 import { sendContact, type ContactForm } from '../lib/api';
+import { prefersReducedMotion } from '../lib/env';
+import { draftPrd } from '../lib/prd';
 
 interface Props {
   profile: Profile;
@@ -12,29 +14,59 @@ interface Props {
 const year = new Date().getFullYear();
 const EMPTY: ContactForm = { name: '', contact: '', message: '', website: '' };
 const WA_TEXT = 'Hi Yongky, I’d like to talk about a project.';
+const STEP_MS = 320;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+type LogLine = { t: string; kind: 'cmd' | 'out' | 'ok' | 'fail' };
 
 export const Contact = memo(function Contact({ profile, copied, onCopy }: Props) {
   const [form, setForm] = useState<ContactForm>(EMPTY);
-  const [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle');
+  const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
   const [error, setError] = useState('');
+  const [log, setLog] = useState<LogLine[]>([]);
+  const prd = useMemo(() => draftPrd(form), [form]);
+  const drafting = !!(form.name.trim() || form.message.trim());
 
   const field = (k: keyof ContactForm) => (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
+  // Sending plays out as a tiny deploy: the log runs while the request is in flight.
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (state === 'sending') return;
-    setState('sending');
+    const who = form.name.trim().split(/\s+/)[0] || 'hello';
+    const hash = Math.random().toString(16).slice(2, 9);
+    const steps: LogLine[] = [
+      { t: `$ git commit -m "new project: ${who}"`, kind: 'cmd' },
+      { t: `[inbox ${hash}] 1 file changed: brief.md`, kind: 'out' },
+      { t: '$ git push origin inbox', kind: 'cmd' },
+      { t: '  uploading brief… 100%', kind: 'out' },
+      { t: '  running checks… ✓', kind: 'out' },
+    ];
     setError('');
-    const problem = await sendContact(form);
+    setLog([]);
+    setState('sending');
+    const sending = sendContact(form);
+    const pause = prefersReducedMotion() ? 0 : STEP_MS;
+    for (const line of steps) {
+      setLog((l) => [...l, line]);
+      await sleep(pause);
+    }
+    const problem = await sending;
     if (problem) {
       setError(problem);
-      setState('idle');
-    } else setState('sent');
+      setLog((l) => [...l, { t: `✗ push rejected: ${problem}`, kind: 'fail' }]);
+      setState('failed');
+    } else {
+      setLog((l) => [...l, { t: '✓ deployed to yongky’s inbox', kind: 'ok' }]);
+      setState('sent');
+    }
   };
   const again = () => {
     setForm(EMPTY);
+    setLog([]);
     setState('idle');
   };
+  const back = () => setState('idle');
 
   const copyLabel = copied ? 'COPIED ✓' : 'COPY';
   const firstName = form.name.trim().split(/\s+/)[0];
@@ -58,14 +90,8 @@ export const Contact = memo(function Contact({ profile, copied, onCopy }: Props)
     </div>
     </div>
 
-    <div style={sx(`flex: 1 1 360px; min-width: 0`)}>
-    {state === 'sent' ? (
-    <div className="dk-form dk-form-done" role="status">
-    <span style={sx(`font-family: var(--mono); font-size: 11px; letter-spacing: .04em; color: #8A8A8A`)}>MESSAGE SENT ✓</span>
-    <p style={sx(`margin: 0; font-size: 22px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.3`)}>Thanks{firstName ? `, ${firstName}` : ''}. I’ll reply to {form.contact.trim()} within a day.</p>
-    <button type="button" onClick={again} className="dk-ghost" style={sx(`align-self: flex-start; min-height: 44px; padding: 0 16px; border-radius: 12px; border: 1px solid #262626; background: transparent; color: #EDEDED; font-size: 14px`)}>Send another</button>
-    </div>
-    ) : (
+    <div style={sx(`flex: 1 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 12px`)}>
+    {state === 'idle' ? (
     <form className="dk-form" onSubmit={submit} aria-label="Start a project">
     <div style={sx(`display: flex; flex-direction: column; gap: 4px; margin-bottom: 4px`)}>
     <span style={sx(`font-size: 20px; font-weight: 600; letter-spacing: -0.02em`)}>Start a project</span>
@@ -77,8 +103,35 @@ export const Contact = memo(function Contact({ profile, copied, onCopy }: Props)
     {/* Hidden from people; bots that fill every field give themselves away here. */}
     <div className="dk-trap" aria-hidden="true"><label>WEBSITE<input name="website" tabIndex={-1} autoComplete="off" value={form.website} onChange={field('website')} /></label></div>
     {error && (<p role="alert" style={sx(`margin: 0; font-size: 14px; line-height: 1.5; color: #FFFFFF`)}>{error} You can also email <a href={`mailto:${profile.email}`} style={sx(`color: #EDEDED`)}>{profile.email}</a>.</p>)}
-    <button type="submit" disabled={state === 'sending'} className="dk-solid dk-shine" style={sx(`min-height: 52px; border: 0; border-radius: 14px; background: #EDEDED; color: #070707; font-size: 15px; font-weight: 500; display: inline-flex; align-items: center; justify-content: center; gap: 8px; opacity: ${state === 'sending' ? 0.6 : 1}`)}>{state === 'sending' ? 'Sending…' : 'Send message'}<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+    <button type="submit" className="dk-solid dk-shine" style={sx(`min-height: 52px; border: 0; border-radius: 14px; background: #EDEDED; color: #070707; font-size: 15px; font-weight: 500; display: inline-flex; align-items: center; justify-content: center; gap: 8px`)}>Send message<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
     </form>
+    ) : (
+    <div className="dk-form dk-deploy" role="status" aria-live="polite">
+    <div className="dk-deploy-bar"><span></span><span></span><span></span><span>~/inbox — deploy</span></div>
+    <div className="dk-deploy-log">
+    {log.map((l, i) => (<Fragment key={i}><span className={`is-${l.kind}`}>{l.t}</span></Fragment>))}
+    {state === 'sending' && <span className="dk-deploy-caret" aria-hidden="true" />}
+    </div>
+    {state === 'sent' && (<>
+    <p className="dk-deploy-done">Thanks{firstName ? `, ${firstName}` : ''}. I’ll reply to {form.contact.trim()} within a day.</p>
+    <button type="button" onClick={again} className="dk-ghost" style={sx(`align-self: flex-start; min-height: 44px; padding: 0 16px; border-radius: 12px; border: 1px solid #262626; background: transparent; color: #EDEDED; font-size: 14px`)}>Send another</button>
+    </>)}
+    {state === 'failed' && (<>
+    <p className="dk-deploy-done">Your message is still here. Try again, or email <a href={`mailto:${profile.email}`} style={sx(`color: #EDEDED`)}>{profile.email}</a>.</p>
+    <button type="button" onClick={back} className="dk-ghost" style={sx(`align-self: flex-start; min-height: 44px; padding: 0 16px; border-radius: 12px; border: 1px solid #262626; background: transparent; color: #EDEDED; font-size: 14px`)}>Back to the form</button>
+    </>)}
+    </div>
+    )}
+    {state === 'idle' && drafting && (
+    <div className="dk-prd" aria-hidden="true">
+    <div className="dk-prd-head"><span>PRD.md</span><span>drafting…</span></div>
+    <span className="dk-prd-title"># {prd.title}</span>
+    <span><b>client</b> {prd.client}</span>
+    <span><b>reply to</b> {prd.replyTo}</span>
+    <span><b>problem</b> {prd.problem}</span>
+    <span><b>timeline</b> {prd.timeline}</span>
+    <span><b>scope</b> {prd.size}</span>
+    </div>
     )}
     </div>
     </div>

@@ -25,6 +25,7 @@ export const Playground = memo(function Playground({ stack: groups, active }: Pr
   const [phone] = useState(isPhone);
   const [motionLive, setMotionLive] = useState(false); // a real motion reading has arrived
   const onScreen = useRef(false);
+  const tagged = useRef<{ el: HTMLElement; t: number } | null>(null);
   // The brand marks are ~23 kB gzipped, so they load in their own chunk after the page is up.
   const [iconFor, setIconFor] = useState<((name: string) => string | undefined) | null>(null);
   useEffect(() => {
@@ -124,11 +125,34 @@ export const Playground = memo(function Playground({ stack: groups, active }: Pr
   const hint = !phone ? 'grab, throw, stack' : motionLive ? 'drag, flick, or shake your phone' : motionNeedsAsk ? 'drag, flick · tap Shake to use your phone' : 'drag and flick';
   const dropAgain = () => worldRef.current?.drop();
   const boxMove = (e: PointerEvent) => worldRef.current?.drag(e.clientX, e.clientY);
-  const boxUp = () => worldRef.current?.release();
+  // Pressing a logo shows its name (phones have no cursor label); it lingers briefly after release.
+  const showName = (el: HTMLElement) => {
+    const prev = tagged.current;
+    if (prev) {
+      window.clearTimeout(prev.t);
+      if (prev.el !== el) prev.el.classList.remove('is-pressed');
+    }
+    const box = boxRef.current?.getBoundingClientRect();
+    el.classList.toggle('tag-below', !!box && el.getBoundingClientRect().top - box.top < 44);
+    el.classList.add('is-pressed');
+    tagged.current = { el, t: 0 };
+  };
+  const hideNameSoon = () => {
+    const cur = tagged.current;
+    if (!cur) return;
+    window.clearTimeout(cur.t);
+    cur.t = window.setTimeout(() => cur.el.classList.remove('is-pressed'), 1100);
+  };
+  useEffect(() => () => window.clearTimeout(tagged.current?.t), []);
+  const boxUp = () => {
+    worldRef.current?.release();
+    hideNameSoon();
+  };
   const grab = (index: number) => (e: PointerEvent<HTMLElement>) => {
     const world = worldRef.current;
     if (!world) return;
     e.preventDefault();
+    if (e.currentTarget.dataset.name) showName(e.currentTarget);
     world.grab(index, e.clientX, e.clientY);
     // Keep receiving moves even when the pointer leaves the chip.
     boxRef.current?.setPointerCapture(e.pointerId);
@@ -150,7 +174,7 @@ export const Playground = memo(function Playground({ stack: groups, active }: Pr
     <div ref={boxRef} className={boxCls} aria-hidden="true" onPointerMove={boxMove} onPointerUp={boxUp} onPointerCancel={boxUp} style={sx(`position: relative; border: 1px solid #1C1C1C; border-radius: 28px; background: radial-gradient(#141414 1px, transparent 1px) 0 0/24px 24px, #0A0A0A; overflow: hidden`)}>
     <span style={sx(`position: absolute; left: 24px; top: 20px; font-family: var(--mono); font-size: 12px; color: #8A8A8A`)}>{hint}</span>
     {chips.map((c, i) => (<Fragment key={i}>
-    <span className={c.cls} data-cursor={c.icon ? c.t : "Drag"} onPointerDown={grab(i)} style={sx(`position: absolute; left: 0; top: 0; transform: translate(-999px, -999px); white-space: nowrap; border-radius: 999px; font-weight: 500; letter-spacing: -0.01em; background: ${c.bg}; color: ${c.color}; border: 1px solid ${c.border}`)}>{c.icon ? (<svg viewBox="0 0 24 24" aria-hidden="true"><path d={c.icon} /></svg>) : c.t}</span>
+    <span className={c.cls} data-cursor={c.icon ? c.t : "Drag"} data-name={c.icon ? c.t : undefined} onPointerDown={grab(i)} style={sx(`position: absolute; left: 0; top: 0; transform: translate(-999px, -999px); white-space: nowrap; border-radius: 999px; font-weight: 500; letter-spacing: -0.01em; background: ${c.bg}; color: ${c.color}; border: 1px solid ${c.border}`)}>{c.icon ? (<svg viewBox="0 0 24 24" aria-hidden="true"><path d={c.icon} /></svg>) : c.t}</span>
     </Fragment>))}
     </div>
     <div style={sx(`margin-top: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px 24px; font-size: 13px; line-height: 1.6; color: #9A9A9A`)}>

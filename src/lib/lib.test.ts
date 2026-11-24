@@ -150,3 +150,25 @@ describe('terminal', () => {
     expect(welcome(new Date(0))[1].t).toContain('help');
   });
 });
+
+describe('draftPrd', () => {
+  it('builds a title, problem and timeline from an English brief', async () => {
+    const { draftPrd } = await import('./prd');
+    const d = draftPrd({ name: 'Dewi', contact: 'dewi@example.com', message: 'Hi! We need a booking app for our clinic. Launch within 6 weeks please.' });
+    expect(d.title).toBe('Booking app for our clinic');
+    expect(d.problem).toBe('We need a booking app for our clinic.');
+    expect(d.timeline).toBe('within 6 weeks please');
+    expect(d.client).toBe('Dewi');
+  });
+  it('understands an Indonesian brief', async () => {
+    const { draftPrd } = await import('./prd');
+    const d = draftPrd({ name: '', contact: '', message: 'Kami butuh dashboard stok gudang, targetnya bulan depan' });
+    expect(d.title).toBe('Dashboard stok gudang, targetnya bulan depan');
+    expect(d.timeline).toBe('bulan depan');
+    expect(d.client).toBe('…');
+  });
+  it('has placeholders for an empty form', async () => {
+    const { draftPrd } = await import('./prd');
+    expect(draftPrd({ name: '', contact: '', message: '' })).toMatchObject({ title: 'Untitled project', timeline: 'tbd', size: '…' });
+  });
+});
