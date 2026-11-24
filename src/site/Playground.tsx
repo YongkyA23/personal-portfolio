@@ -4,7 +4,6 @@ import type { StackGroup } from '../content/types';
 import { prefersReducedMotion } from '../lib/env';
 import { createWorld, type World } from '../lib/physics';
 import { Scramble } from './Scramble';
-import { techIcon } from './techIcons';
 
 interface Props {
   stack: StackGroup[];
@@ -16,6 +15,15 @@ export const Playground = memo(function Playground({ stack: groups, active }: Pr
   const boxRef = useRef<HTMLDivElement>(null);
   const worldRef = useRef<World | null>(null);
   const [still] = useState(prefersReducedMotion);
+  // The brand marks are ~23 kB gzipped, so they load in their own chunk after the page is up.
+  const [iconFor, setIconFor] = useState<((name: string) => string | undefined) | null>(null);
+  useEffect(() => {
+    let alive = true;
+    import('./techIcons').then((m) => alive && setIconFor(() => m.techIcon)).catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const chips = useMemo(
     () =>
@@ -27,12 +35,12 @@ export const Playground = memo(function Playground({ stack: groups, active }: Pr
             bg: lead ? '#EDEDED' : gi === 1 ? '#151515' : '#0A0A0A',
             color: lead ? '#070707' : '#EDEDED',
             border: lead ? '#EDEDED' : gi === 1 ? '#2A2A2A' : '#3A3A3A',
-            icon: techIcon(t),
-            cls: `dk-chip${lead ? ' is-lead' : ''}${techIcon(t) ? ' is-icon' : ''}`,
+            icon: iconFor?.(t),
+            cls: `dk-chip${lead ? ' is-lead' : ''}${iconFor?.(t) ? ' is-icon' : ''}`,
           };
         }),
       ),
-    [groups],
+    [groups, iconFor],
   );
 
   useEffect(() => {
