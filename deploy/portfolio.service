@@ -1,0 +1,20 @@
+# /etc/systemd/system/portfolio.service
+[Unit]
+Description=Yongky portfolio (site + API)
+After=network.target mysql.service
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/portfolio
+EnvironmentFile=/var/www/portfolio/.env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node server/index.js
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=full
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
