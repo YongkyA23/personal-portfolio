@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent, type MouseEvent } from 'react';
 import { sx } from '../lib/css';
+import { useFocusTrap } from '../lib/focus';
 import type { Content } from '../content/types';
 import { completions, runCommand, welcome, type TermLine } from '../lib/terminal';
 
@@ -17,6 +18,8 @@ export function Terminal({ content, onClose, onOpenCase }: Props) {
   const [history, setHistory] = useState<string[]>([]);
   const [cursor, setCursor] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(rootRef);
   const timer = useRef(0);
   const options = useMemo(() => completions(content), [content]);
 
@@ -68,7 +71,7 @@ export function Terminal({ content, onClose, onOpenCase }: Props) {
   const termLines = lines.map((l) => ({ ...l, isLink: !!l.href }));
 
   return (
-    <div className="dk-term" role="dialog" aria-modal="true" aria-label="Terminal" onClick={focusTerm}>
+    <div ref={rootRef} className="dk-term" role="dialog" aria-modal="true" aria-label="Terminal" onClick={focusTerm}>
     <div style={sx(`height: 44px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 12px 0 18px; border-bottom: 1px solid #1C1C1C; font-size: 12px; color: #8A8A8A`)}>
     <span>yongky@portfolio: ~ — zsh</span>
     <button type="button" onClick={closeTerm} style={sx(`min-height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #262626; background: transparent; color: #C9C9C9; font-family: var(--mono); font-size: 12px`)}>exit · back to GUI</button>

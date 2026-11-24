@@ -4,6 +4,9 @@ const isStr = (v) => typeof v === 'string';
 const isStrArr = (v) => Array.isArray(v) && v.every(isStr);
 const CATS = ['product', 'internal', 'personal'];
 const TYPES = ['web', 'phone', 'term'];
+// Answer patterns run in every visitor's browser. Groups and repetition (* + {n}) are not allowed,
+// so a pattern can never backtrack badly enough to freeze the page.
+const SAFE_PATTERN = /^[\p{L}\p{N}\s|.?\\'’!-]+$/u;
 
 export function validateContent(c) {
   if (!c || typeof c !== 'object') return 'content must be an object';
@@ -22,7 +25,7 @@ export function validateContent(c) {
   for (const k of ['linkedin', 'github']) {
     if (!/^https:\/\//.test(p[k])) return `profile.${k} must be an https URL`;
   }
-  if (!/^(\/|https:\/\/)/.test(p.cvUrl)) return 'profile.cvUrl must start with / or https://';
+  if (!/^(\/(?!\/)|https:\/\/)/.test(p.cvUrl)) return 'profile.cvUrl must start with / or https://';
 
   if (!Array.isArray(c.projects) || c.projects.length === 0) return 'projects must be a non-empty list';
   const ids = new Set();
@@ -60,6 +63,7 @@ export function validateContent(c) {
   for (const [i, a] of c.answers.entries()) {
     if (!a || !isStr(a.match) || !isStr(a.text)) return `answers[${i}] needs match and text`;
     if (a.match.length > 200) return `answers[${i}].match is too long`;
+    if (!SAFE_PATTERN.test(a.match)) return `answers[${i}].match may only use words, spaces, | . ? - and \\b`;
     try { new RegExp(a.match, 'i'); } catch { return `answers[${i}].match is not a valid pattern`; }
   }
   if (!isStr(c.fallbackAnswer)) return 'fallbackAnswer must be a string';

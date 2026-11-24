@@ -51,6 +51,18 @@ describe('validateContent', () => {
     c.profile.github = 'javascript:alert(1)';
     expect(validateContent(c)).toContain('profile.github');
   });
+  it('rejects answer patterns that could hang the browser', () => {
+    for (const match of ['(a+)+$', 'a*', 'x{1,9}', '(roblox)']) {
+      const c = clone();
+      c.answers[0].match = match;
+      expect(validateContent(c)).toContain('answers[0].match');
+    }
+  });
+  it('rejects a protocol-relative cvUrl', () => {
+    const c = clone();
+    c.profile.cvUrl = '//evil.example/cv.pdf';
+    expect(validateContent(c)).toContain('profile.cvUrl');
+  });
   it('rejects non-objects', () => {
     expect(validateContent(null)).not.toBeNull();
     expect(validateContent('x')).not.toBeNull();
@@ -64,6 +76,9 @@ describe('localAnswer', () => {
   });
   it('falls back when nothing matches', () => {
     expect(localAnswer('zzzz', seed)).toBe(seed.fallbackAnswer);
+  });
+  it('only looks at the first 300 characters of a question', () => {
+    expect(localAnswer('x'.repeat(400) + ' roblox', seed)).toBe(seed.fallbackAnswer);
   });
   it('skips a broken pattern', () => {
     const c = clone();

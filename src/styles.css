@@ -171,6 +171,9 @@ button{cursor:pointer}
 .dk-case:focus{outline:none}
 ::selection{background:#EDEDED;color:#070707}
 
+/* the palette must sit above an open case study (95) but below the terminal (150) */
+.dk-pal-back{z-index:140}
+
 /* statement: each word lights up as the section scrolls through the viewport */
 .dk-about{view-timeline-name:--about}
 .dk-word{display:inline-block;margin-right:0.24em;color:#EDEDED}

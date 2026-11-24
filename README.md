@@ -61,8 +61,9 @@ Things worth knowing:
 - A project's `url` is a bare host such as `qi-r.me`; leave it empty for
   work that is not public.
 - **Answers** are what "Ask AI" in the command palette replies with. `match`
-  is a case-insensitive pattern tested against the question, first match
-  wins, and `fallbackAnswer` is used when nothing matches. There is no live
+  is a case-insensitive pattern tested against the question: words separated
+  by `|`, plus `.`, `?`, `-` and `\b`. Groups and repetition are refused so a
+  pattern can never freeze a visitor's browser. First match wins, and `fallbackAnswer` is used when nothing matches. There is no live
   AI model behind it.
 - **Hire pings** lists when a visitor held the "Hold to hire" button. A ping
   carries no contact details; it is a counter, not a message.

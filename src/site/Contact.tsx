@@ -1,4 +1,4 @@
-import { Fragment, memo, useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { Fragment, memo, useEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type PointerEvent } from 'react';
 import { sx } from '../lib/css';
 import type { Profile } from '../content/types';
 import { sendHirePing } from '../lib/api';
@@ -18,18 +18,20 @@ export const Contact = memo(function Contact({ profile, copied, onCopy }: Props)
   const [hired, setHired] = useState(false);
   const [saved, setSaved] = useState(false);
   const timer = useRef(0);
+  const keyHeld = useRef(false);
 
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
+  const complete = () => {
+    setHolding(false);
+    setHired(true);
+    void sendHirePing().then(setSaved);
+  };
   const begin = () => {
     if (hired || holding) return;
     setHolding(true);
     window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => {
-      setHolding(false);
-      setHired(true);
-      void sendHirePing().then(setSaved);
-    }, HOLD_MS);
+    timer.current = window.setTimeout(complete, HOLD_MS);
   };
   const end = () => {
     window.clearTimeout(timer.current);
@@ -52,13 +54,20 @@ export const Contact = memo(function Contact({ profile, copied, onCopy }: Props)
   };
   const holdEnd = end;
   const holdKey = (e: KeyboardEvent) => {
-    if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) {
-      e.preventDefault();
-      begin();
-    }
+    if (e.key !== ' ' && e.key !== 'Enter') return;
+    e.preventDefault(); // also stops the browser's own click, so holding the key is the only keyboard path
+    keyHeld.current = true;
+    if (!e.repeat) begin();
   };
   const holdKeyUp = (e: KeyboardEvent) => {
-    if (e.key === ' ' || e.key === 'Enter') end();
+    if (e.key !== ' ' && e.key !== 'Enter') return;
+    e.preventDefault();
+    keyHeld.current = false;
+    end();
+  };
+  // Screen readers, voice control and switch access send a bare click (detail 0) and cannot hold.
+  const holdClick = (e: MouseEvent) => {
+    if (e.detail === 0 && !keyHeld.current && !hired && !holding) complete();
   };
   const resetHold = () => {
     setHired(false);
@@ -84,7 +93,7 @@ export const Contact = memo(function Contact({ profile, copied, onCopy }: Props)
     {hired && (<>
     {burst.map((b, i) => (<Fragment key={i}><span aria-hidden="true" style={sx(`position: absolute; left: 84px; top: 84px; width: 8px; height: 8px; border-radius: 50%; background: #EDEDED; --a: ${b.a}; animation: dk-burst .9s cubic-bezier(.2,.8,.2,1) ${b.d} both`)}></span></Fragment>))}
     </>)}
-    <button type="button" className={`dk-hold ${holdCls}`} data-cursor={hired ? undefined : 'Hold'} onPointerDown={holdStart} onPointerUp={holdEnd} onPointerLeave={holdEnd} onKeyDown={holdKey} onKeyUp={holdKeyUp} aria-label="Hold to send a hire request" style={sx(`position: relative; width: 176px; height: 176px; border-radius: 50%; border: 0; padding: 6px; box-sizing: border-box; touch-action: none; user-select: none`)}>
+    <button type="button" className={`dk-hold ${holdCls}`} data-cursor={hired ? undefined : 'Hold'} onClick={holdClick} onPointerDown={holdStart} onPointerUp={holdEnd} onPointerLeave={holdEnd} onKeyDown={holdKey} onKeyUp={holdKeyUp} aria-label={hired ? 'Hire request sent' : 'Hold to send a hire request'} style={sx(`position: relative; width: 176px; height: 176px; border-radius: 50%; border: 0; padding: 6px; box-sizing: border-box; touch-action: none; user-select: none`)}>
     <span style={sx(`width: 100%; height: 100%; border-radius: 50%; background: ${holdInner}; color: ${holdInk}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; transition: background .4s ease, color .4s ease`)}>
     <span style={sx(`font-weight: 600; font-size: 20px; letter-spacing: -0.03em`)}>{holdTitle}</span>
     <span style={sx(`font-family: var(--mono); font-size: 11px; opacity: 0.7`)}>{holdSub}</span>
