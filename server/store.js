@@ -14,6 +14,23 @@ import mysql from 'mysql2/promise';
 
 const MAX_PINGS = 500;
 
+/**
+ * Wraps a one-time setup so it runs on first use and is retried after a failure.
+ * This is what lets the server start while the database is still down.
+ * @param {() => Promise<void>} init
+ * @returns {() => Promise<void>}
+ */
+export function createLazyInit(init) {
+  let ready = null;
+  return () => {
+    ready ??= init().catch((err) => {
+      ready = null;
+      throw err;
+    });
+    return ready;
+  };
+}
+
 /** @returns {Store} */
 export function createMemoryStore() {
   let content = null;
@@ -51,8 +68,7 @@ export function createMysqlStore(databaseUrl) {
     timezone: 'Z',
   });
 
-  return {
-    async init() {
+  const ensure = createLazyInit(async () => {
       await pool.query(
         `CREATE TABLE IF NOT EXISTS site_content (
            id TINYINT UNSIGNED NOT NULL PRIMARY KEY,
@@ -66,8 +82,12 @@ export function createMysqlStore(databaseUrl) {
            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
          ) CHARACTER SET utf8mb4`,
       );
-    },
+  });
+
+  return {
+    init: ensure,
     async getContent() {
+      await ensure();
       const [rows] = await pool.query('SELECT body FROM site_content WHERE id = 1');
       if (rows.length === 0) return null;
       const body = rows[0].body;
@@ -75,15 +95,18 @@ export function createMysqlStore(databaseUrl) {
       return typeof body === 'string' ? JSON.parse(body) : body;
     },
     async setContent(doc) {
+      await ensure();
       await pool.query(
         'INSERT INTO site_content (id, body) VALUES (1, ?) ON DUPLICATE KEY UPDATE body = VALUES(body)',
         [JSON.stringify(doc)],
       );
     },
     async addPing() {
+      await ensure();
       await pool.query('INSERT INTO hire_pings () VALUES ()');
     },
     async listPings() {
+      await ensure();
       const [rows] = await pool.query(`SELECT created_at FROM hire_pings ORDER BY id DESC LIMIT ${MAX_PINGS}`);
       return rows.map((row) => ({ at: new Date(row.created_at).toISOString() }));
     },

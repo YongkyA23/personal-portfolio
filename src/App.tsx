@@ -12,12 +12,15 @@ export default function App() {
   // Render the bundled content at once, then swap in whatever the server has saved.
   const [content, setContent] = useState<Content>(seed);
   const [admin] = useState(isAdmin);
+  const [settled, setSettled] = useState(false);
 
   useEffect(() => {
     if (admin) return;
     const controller = new AbortController();
     void fetchContent(controller.signal).then((fresh) => {
+      if (controller.signal.aborted) return;
       if (fresh && JSON.stringify(fresh) !== JSON.stringify(seed)) setContent(fresh);
+      setSettled(true);
     });
     return () => controller.abort();
   }, [admin]);
@@ -29,5 +32,5 @@ export default function App() {
       </Suspense>
     );
   }
-  return <Site content={content} />;
+  return <Site content={content} settled={settled} />;
 }

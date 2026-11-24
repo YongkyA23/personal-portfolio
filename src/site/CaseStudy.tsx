@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useRef } from 'react';
 import { sx } from '../lib/css';
+import { useFocusTrap } from '../lib/focus';
 import type { Project } from '../content/types';
 
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
 
 export function CaseStudy({ project, nextName, flip, onClose, onNext }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(rootRef);
 
   useEffect(() => {
     const root = rootRef.current;

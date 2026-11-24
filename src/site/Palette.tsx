@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent, type MouseEvent } from 'react';
 import { sx } from '../lib/css';
+import { useFocusTrap } from '../lib/focus';
 import type { Content } from '../content/types';
 import { localAnswer } from '../lib/answer';
 import { ICON, SECTIONS, type SectionId } from './icons';
@@ -39,6 +40,8 @@ export function Palette({ content, onClose, onSection, onOpenCase, onTerminal, o
   const [index, setIndex] = useState(0);
   const [answer, setAnswer] = useState<Answer | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(rootRef);
   const timers = useRef({ think: 0, type: 0 });
 
   const stopTyping = () => {
@@ -87,6 +90,7 @@ export function Palette({ content, onClose, onSection, onOpenCase, onTerminal, o
 
   const cmds = commands.map((c, i) => ({
     ...c,
+    at: i,
     head: i === 0 || commands[i - 1].group !== c.group,
     on: i === selected,
     bg: i === selected ? '#1A1A1A' : 'transparent',
@@ -116,11 +120,11 @@ export function Palette({ content, onClose, onSection, onOpenCase, onTerminal, o
   };
 
   return (
-    <div className="dk-pal-back" onClick={closePal}>
+    <div ref={rootRef} className="dk-pal-back" onClick={closePal}>
     <div role="dialog" aria-modal="true" aria-label="Command palette" onClick={stop} style={sx(`width: min(640px, 100%); border-radius: 20px; border: 1px solid #262626; background: #0C0C0C; box-shadow: 0 30px 80px rgba(0,0,0,0.7); overflow: hidden; animation: dk-pop .25s cubic-bezier(.2,.8,.2,1) both`)}>
     <div style={sx(`display: flex; align-items: center; gap: 12px; padding: 0 16px; border-bottom: 1px solid #1C1C1C`)}>
     <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A9A9A" strokeWidth="1.6"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
-    <input type="text" aria-label="Search commands or ask the AI" placeholder="Search, jump, or ask the AI about Yongky…" value={palQ} onChange={onPalQ} onKeyDown={onPalKey} autoFocus style={sx(`flex-grow: 1; min-width: 0; min-height: 58px; border: 0; background: transparent; color: #EDEDED; font-size: 16px; outline: none`)} />
+    <input type="text" role="combobox" aria-expanded={true} aria-controls="pal-list" aria-autocomplete="list" aria-activedescendant={commands.length ? `pal-opt-${selected}` : undefined} aria-label="Search commands or ask the AI" placeholder="Search, jump, or ask the AI about Yongky…" value={palQ} onChange={onPalQ} onKeyDown={onPalKey} autoFocus style={sx(`flex-grow: 1; min-width: 0; min-height: 58px; border: 0; background: transparent; color: #EDEDED; font-size: 16px; outline: none`)} />
     <button type="button" onClick={closePal} style={sx(`min-height: 32px; padding: 0 8px; border: 1px solid #262626; border-radius: 6px; background: transparent; color: #9A9A9A; font-family: var(--mono); font-size: 11px`)}>ESC</button>
     </div>
     {ai.on && (<>
@@ -135,10 +139,10 @@ export function Palette({ content, onClose, onSection, onOpenCase, onTerminal, o
     </div>
     </div>
     </>)}
-    <div ref={listRef} role="listbox" aria-label="Commands" style={sx(`max-height: 340px; overflow-y: auto; padding: 8px`)}>
+    <div ref={listRef} id="pal-list" role="listbox" aria-label="Commands" style={sx(`max-height: 340px; overflow-y: auto; padding: 8px`)}>
     {cmds.map((c, i) => (<Fragment key={i}>
     {c.head && (<><div style={sx(`padding: 10px 12px 6px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; color: #8A8A8A`)}>{c.group}</div></>)}
-    <button type="button" role="option" aria-selected={c.on} onClick={c.run} onMouseEnter={c.hover} style={sx(`width: 100%; min-height: 44px; border: 0; border-radius: 10px; background: ${c.bg}; color: #EDEDED; display: flex; align-items: center; gap: 12px; padding: 0 12px; font-size: 14px; text-align: left`)}>
+    <button type="button" id={`pal-opt-${c.at}`} role="option" aria-selected={c.on} onClick={c.run} onMouseEnter={c.hover} style={sx(`width: 100%; min-height: 44px; border: 0; border-radius: 10px; background: ${c.bg}; color: #EDEDED; display: flex; align-items: center; gap: 12px; padding: 0 12px; font-size: 14px; text-align: left`)}>
     <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9A9A9A" strokeWidth="1.6" strokeLinejoin="round"><path d={c.d}/></svg>
     <span style={sx(`flex-grow: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap`)}>{c.label}</span>
     <span style={sx(`font-family: var(--mono); font-size: 11px; color: #8A8A8A; white-space: nowrap`)}>{c.hint}</span>

@@ -125,3 +125,18 @@ describe('removed and unknown routes', () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe('mysql store recovery', () => {
+  it('creates tables on first use when the database was down at boot', async () => {
+    const { createLazyInit } = await import('./store.js');
+    let attempts = 0;
+    const ensure = createLazyInit(async () => {
+      attempts += 1;
+      if (attempts === 1) throw new Error('connect ECONNREFUSED');
+    });
+    await expect(ensure()).rejects.toThrow('ECONNREFUSED');
+    await expect(ensure()).resolves.toBeUndefined();
+    await ensure();
+    expect(attempts).toBe(2);
+  });
+});

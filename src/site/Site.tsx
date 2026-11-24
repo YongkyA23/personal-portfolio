@@ -21,11 +21,24 @@ const INTRO_MS = 3300;
 const CASE_HASH = '#/work/';
 const WRAP = sx(`max-width: 1080px; margin: 0 auto; padding: 0 clamp(20px, 5vw, 64px)`);
 
-const caseFromHash = () => (window.location.hash.startsWith(CASE_HASH) ? decodeURIComponent(window.location.hash.slice(CASE_HASH.length)) : null);
+function caseFromHash(): string | null {
+  if (!window.location.hash.startsWith(CASE_HASH)) return null;
+  try {
+    return decodeURIComponent(window.location.hash.slice(CASE_HASH.length));
+  } catch {
+    return null; // a mangled link is treated as no link
+  }
+}
 const isTyping = (target: EventTarget | null) =>
   target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName));
 
-export default function Site({ content }: { content: Content }) {
+interface Props {
+  content: Content;
+  /** True once the server's content has arrived (or we know it will not). */
+  settled: boolean;
+}
+
+export default function Site({ content, settled }: Props) {
   const { profile, projects } = content;
   const cursorRef = useRef<HTMLDivElement>(null);
   useSiteEffects(cursorRef);
@@ -78,8 +91,10 @@ export default function Site({ content }: { content: Content }) {
   const caseProject = caseIndex >= 0 ? projects[caseIndex] : null;
   const nextProject = caseProject ? projects[(caseIndex + 1) % projects.length] : null;
 
+  // Remember where focus was on the page itself; an element inside another overlay is about to go away.
   const rememberFocus = () => {
-    if (document.activeElement instanceof HTMLElement && document.activeElement !== document.body) returnFocus.current = document.activeElement;
+    const el = document.activeElement;
+    if (el instanceof HTMLElement && el !== document.body && !el.closest('[role="dialog"]')) returnFocus.current = el;
   };
   const restoreFocus = () => {
     const el = returnFocus.current;
@@ -113,6 +128,7 @@ export default function Site({ content }: { content: Content }) {
 
   // A case study has its own URL, so it can be shared and the Back button closes it.
   const openCase = useCallback((id: string) => {
+    rememberFocus();
     setPalette(false);
     setTerminal(false);
     setCaseId(id);
@@ -126,25 +142,56 @@ export default function Site({ content }: { content: Content }) {
     else {
       window.history.replaceState(null, '', window.location.pathname + window.location.search);
       setCaseId(null);
+      restoreFocus();
     }
   }, []);
   const openNextCase = useCallback(() => {
     if (nextProject) openCase(nextProject.id);
   }, [nextProject, openCase]);
 
+  // Keep the address bar, the history entry and the open case study in step, however the
+  // visitor got here: Back/Forward, a typed or pasted hash, or a fresh page load.
   useEffect(() => {
-    const onPop = () => setCaseId(caseFromHash());
-    window.addEventListener('popstate', onPop);
-    return () => window.removeEventListener('popstate', onPop);
+    const plain = () => window.location.pathname + window.location.search;
+    const sync = (freshLoad: boolean) => {
+      const id = caseFromHash();
+      if (!id) {
+        // A mangled case link: clean the address and show the page.
+        if (window.location.hash.startsWith(CASE_HASH)) window.history.replaceState(null, '', plain());
+        setCaseId(null);
+        if (!freshLoad) restoreFocus();
+        return;
+      }
+      if (!window.history.state?.caseOpen) {
+        const url = window.location.hash;
+        // On a fresh load, put the plain page underneath, so closing never lands on another case study.
+        if (freshLoad) {
+          window.history.replaceState(null, '', plain());
+          window.history.pushState({ caseOpen: true }, '', url);
+        } else window.history.replaceState({ caseOpen: true }, '', url);
+      }
+      setCaseId(id);
+    };
+    sync(true);
+    const onChange = () => sync(false);
+    window.addEventListener('popstate', onChange);
+    window.addEventListener('hashchange', onChange);
+    return () => {
+      window.removeEventListener('popstate', onChange);
+      window.removeEventListener('hashchange', onChange);
+    };
   }, []);
 
-  // A link to a project that no longer exists: drop the hash, show the page.
+  // A link to a project that does not exist: show the plain page. Wait for the server's
+  // content first, because the project may have been added in the admin after this build.
   useEffect(() => {
-    if (caseId && !caseProject) {
+    if (!settled || !caseId || caseProject) return;
+    if (window.history.state?.caseOpen) window.history.back();
+    else {
       window.history.replaceState(null, '', window.location.pathname + window.location.search);
       setCaseId(null);
     }
-  }, [caseId, caseProject]);
+  }, [settled, caseId, caseProject]);
 
   const goSection = useCallback((id: SectionId) => {
     setPalette(false);

@@ -201,3 +201,27 @@ through to the end without further check-ins.
    content, which Yongky can edit in the admin. A Gemini-backed agent may be
    added later; nothing in this build depends on it. The related anti-goal
    about an unbounded API bill no longer applies.
+
+## Found while building (2026-11-24)
+
+Three canvas defects showed up once the page ran in a real browser and were
+fixed in the site; each is a difference from the canvas as drawn:
+
+1. The project preview's host line and title were vertically centred over
+   the mock-up, because the preview became a `<button>` in v3 and buttons
+   centre their content. They are pinned to the top, as in v2.
+2. "Search / ask" in the sidebar wrapped onto two lines. It is now one line
+   at 13 px.
+3. At phone width the "NAVIGATE" label shared a row with the links and the
+   active-link bar floated between them. The label has its own row and the
+   bar is hidden there.
+
+An independent review of the finished branch then found eleven issues, all
+fixed with tests: a mangled case-study link blanked the page; links to
+projects added in the admin were dropped before the content loaded; Back
+could reopen an earlier case study; the palette opened behind a case study;
+tables were not created if MySQL was down at boot; an answer pattern could
+freeze a visitor's tab (patterns are now limited to words, `|`, `.`, `?`,
+`-` and `\b`); `cvUrl` accepted `//host` links; dialogs did not trap or
+restore focus; the hold button could not be used with assistive technology;
+the palette did not announce its selection.
