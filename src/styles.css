@@ -62,8 +62,8 @@ button,input{font-family:inherit}
 .dk-secret{color:#0C0C0C;transition:color .5s ease}
 .dk-lamp-on .dk-secret{color:#FFFFFF}
 .dk-lamp{position:fixed;inset:0;z-index:120;pointer-events:none;background:radial-gradient(circle 200px at var(--fx,50%) var(--fy,40%),rgba(0,0,0,0) 0%,rgba(0,0,0,0.2) 50%,rgba(0,0,0,0.975) 100%);animation:dk-fadein .5s ease both}
-@keyframes dk-pull-a{0%,100%{transform:translateY(0)}35%{transform:translateY(16px)}}
-@keyframes dk-pull-b{0%,100%{transform:translateY(0)}35%{transform:translateY(16px)}}
+@keyframes dk-pull-a{0%{transform:translateY(0)}30%{transform:translateY(18px)}100%{transform:translateY(0)}}
+@keyframes dk-pull-b{0%{transform:translateY(0)}30%{transform:translateY(18px)}100%{transform:translateY(0)}}
 
 /* 11 · hold to hire */
 .dk-hold{--hold:0;transition:--hold .4s ease;background:conic-gradient(#EDEDED calc(var(--hold) * 1%), #262626 0)}
@@ -170,6 +170,23 @@ button{cursor:pointer}
 :focus-visible{outline:2px solid #FFFFFF;outline-offset:2px}
 .dk-case:focus{outline:none}
 ::selection{background:#EDEDED;color:#070707}
+
+/* flashlight pull cord: a ball chain with a teardrop handle that lights up when on */
+.dk-cord{position:absolute;right:2px;top:0;width:44px;height:92px;border:0;background:transparent;padding:0;display:flex;justify-content:center;align-items:flex-start}
+.dk-cord-pull{display:block;transform-origin:50% 0}
+.dk-cord svg{display:block;overflow:visible;transform-origin:50% 0;transition:filter .4s ease}
+.dk-cord:hover svg,.dk-cord:focus-visible svg{animation:dk-sway 1.8s ease-in-out infinite}
+@keyframes dk-sway{0%,100%{transform:rotate(0)}25%{transform:rotate(3.5deg)}75%{transform:rotate(-3.5deg)}}
+.dk-cord-mount{fill:#2A2A2A}
+.dk-cord-bead{fill:#5E5E5E;transition:fill .4s ease}
+.dk-cord-cap{fill:#8A8A8A;transition:fill .4s ease}
+.dk-cord-handle{fill:#101010;stroke:#EDEDED;stroke-width:1.5;stroke-linejoin:round;transition:fill .4s ease}
+.dk-cord-shine{stroke:#5E5E5E;stroke-width:1.2;transition:stroke .4s ease}
+.dk-cord.is-on svg{filter:drop-shadow(0 0 6px rgba(255,255,255,.9)) drop-shadow(0 0 18px rgba(255,255,255,.55))}
+.dk-cord.is-on .dk-cord-bead,.dk-cord.is-on .dk-cord-cap{fill:#EDEDED}
+.dk-cord.is-on .dk-cord-handle{fill:#FFFFFF}
+.dk-cord.is-on .dk-cord-shine{stroke:#BDBDBD}
+@media (prefers-reduced-motion: reduce){.dk-cord:hover svg,.dk-cord:focus-visible svg,.dk-cord-pull{animation:none !important}}
 
 /* the palette must sit above an open case study (95) but below the terminal (150) */
 .dk-pal-back{z-index:140}
