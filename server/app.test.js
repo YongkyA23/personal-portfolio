@@ -34,6 +34,7 @@ async function start(options) {
 }
 
 const put = (body) => json('PUT', body);
+const MSG = { name: 'Dewi', contact: 'dewi@example.com', message: 'We need a booking app for our clinic.' };
 const auth = {};
 
 afterEach(async () => {
@@ -137,7 +138,7 @@ describe('database trouble', () => {
     const fail = async () => {
       throw new Error('connect ECONNREFUSED');
     };
-    return { init: fail, getContent: fail, setContent: fail, addPing: fail, listPings: fail, close: async () => {} };
+    return { init: fail, getContent: fail, setContent: fail, addMessage: fail, listMessages: fail, close: async () => {} };
   };
 
   it('keeps the public site up with seed content', async () => {
@@ -153,26 +154,43 @@ describe('database trouble', () => {
     for (const store of [null, broken()]) {
       const call = await start({ store });
       expect((await call('/api/content', put(seed))).status).toBe(503);
-      expect((await call('/api/hire', { method: 'POST' })).status).toBe(503);
+      expect((await call('/api/contact', json('POST', MSG))).status).toBe(503);
       expect((await call('/api/messages', auth)).status).toBe(503);
     }
   });
 });
 
-describe('hire pings', () => {
-  it('records a ping that the admin can list', async () => {
+describe('contact form', () => {
+  it('stores a message that only the admin can read', async () => {
     const call = await start({ store: createMemoryStore() });
-    expect((await call('/api/hire', { method: 'POST' })).status).toBe(200);
+    expect((await call('/api/contact', json('POST', { ...MSG, name: '  Dewi  ' }), false)).status).toBe(201);
+    expect((await call('/api/messages', {}, false)).status).toBe(401);
     const res = await call('/api/messages', auth);
     expect(res.status).toBe(200);
-    const list = await res.json();
-    expect(list).toHaveLength(1);
-    expect(Number.isNaN(Date.parse(list[0].at))).toBe(false);
+    const [m] = await res.json();
+    expect(m).toMatchObject({ name: 'Dewi', contact: MSG.contact, message: MSG.message });
+    expect(Number.isNaN(Date.parse(m.at))).toBe(false);
   });
 
-  it('keeps the ping list private', async () => {
+  it('refuses a message without a name, a way to reply, or any detail', async () => {
     const call = await start({ store: createMemoryStore() });
-    expect((await call('/api/messages', {}, false)).status).toBe(401);
+    for (const bad of [{ ...MSG, name: ' ' }, { ...MSG, contact: 'x' }, { ...MSG, message: 'hi' }, {}]) {
+      const res = await call('/api/contact', json('POST', bad), false);
+      expect(res.status).toBe(400);
+      expect((await res.json()).error).toBeTruthy();
+    }
+  });
+
+  it('quietly drops what a bot puts in the hidden field', async () => {
+    const store = createMemoryStore();
+    const call = await start({ store });
+    expect((await call('/api/contact', json('POST', { ...MSG, website: 'http://spam.example' }), false)).status).toBe(201);
+    expect(await store.listMessages()).toHaveLength(0);
+  });
+
+  it('has no old hold-to-hire endpoint', async () => {
+    const call = await start({ store: createMemoryStore() });
+    expect((await call('/api/hire', { method: 'POST' })).status).toBe(404);
   });
 });
 

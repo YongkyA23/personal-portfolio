@@ -70,3 +70,8 @@ fieldset.adm-field{gap:8px}
   .adm-nav button{white-space:nowrap}
   .adm-side-foot{flex-direction:row;align-items:center;flex-wrap:wrap;margin:0;padding:0 4px}
 }
+.adm-msgs{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px}
+.adm-msgs li{border:1px solid #1C1C1C;border-radius:14px;background:#0A0A0A;padding:16px;display:flex;flex-direction:column;gap:6px}
+.adm-msgs strong{font-weight:500;font-size:16px}
+.adm-msgs a{font-family:var(--mono);font-size:13px;color:#C9C9C9;align-self:flex-start}
+.adm-msgs p{margin:4px 0 0;white-space:pre-wrap;color:#D4D4D4;line-height:1.6}

@@ -29,7 +29,7 @@ export function Intro({ name, initials, projectCount, experienceCount, onSkip }:
     </div>
     <div style={sx(`display: flex; flex-direction: column; gap: 18px`)}>
     <div style={sx(`display: flex; justify-content: space-between; align-items: flex-end; gap: 16px`)}>
-    <span style={sx(`font-family: var(--mono); font-size: 12px; color: #8A8A8A`)}>FIRST VISIT ONLY · AI BUILDER · JAKARTA</span>
+    <span style={sx(`font-family: var(--mono); font-size: 12px; color: #8A8A8A`)}>FIRST VISIT ONLY · VIBECODER · JAKARTA</span>
     <span style={sx(`font-weight: 500; font-size: clamp(72px, 12vw, 168px); line-height: 0.8; letter-spacing: -0.06em`)}><span className="dk-pct"></span><span style={sx(`color: #6E6E6E`)}>%</span></span>
     </div>
     <div aria-hidden="true" style={sx(`height: 1px; background: #222222`)}><div className="dk-bar" style={sx(`height: 1px; background: #EDEDED`)}></div></div>

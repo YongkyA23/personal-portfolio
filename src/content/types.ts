@@ -45,6 +45,8 @@ export interface Profile {
   email: string;
   linkedin: string;
   github: string;
+  /** WhatsApp number with country code, digits only (e.g. 6281234567890). Empty hides the button. */
+  whatsapp?: string;
   cvUrl: string;
   kicker: string;
   headline: [string, string];

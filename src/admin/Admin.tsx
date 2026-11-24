@@ -8,6 +8,15 @@ type Note = { kind: 'ok' | 'error'; text: string } | null;
 
 const pick = (doc: Obj, keys: string[]) => JSON.stringify(keys.map((k) => doc[k]));
 
+type Message = { at: string; name: string; contact: string; message: string };
+
+/** mailto: for an email, wa.me for something that looks like a phone number. */
+function replyLink(contact: string): string {
+  if (contact.includes('@')) return `mailto:${contact}?subject=${encodeURIComponent('Re: your project')}`;
+  const digits = contact.replace(/\D/g, '').replace(/^0/, '62');
+  return digits.length >= 8 ? `https://wa.me/${digits}` : `mailto:${contact}`;
+}
+
 async function readError(res: Response): Promise<string> {
   try {
     const body = (await res.json()) as { error?: string };
@@ -106,7 +115,7 @@ function Editor({ user, onOut }: { user: string; onOut: (why: string) => void })
   const [tab, setTab] = useState<TabId>('profile');
   const [note, setNote] = useState<Note>(null);
   const [busy, setBusy] = useState(false);
-  const [pings, setPings] = useState<Array<{ at: string }> | null>(null);
+  const [messages, setMessages] = useState<Message[] | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -173,23 +182,23 @@ function Editor({ user, onOut }: { user: string; onOut: (why: string) => void })
     }
   };
 
-  const loadPings = async () => {
-    setPings(null);
+  const loadMessages = async () => {
+    setMessages(null);
     try {
       const res = await fetch('/api/messages');
       if (signedOut(res)) return;
       if (!res.ok) throw new Error(await readError(res));
-      setPings((await res.json()) as Array<{ at: string }>);
+      setMessages((await res.json()) as Message[]);
       setNote(null);
     } catch (err) {
-      setPings([]);
-      setNote({ kind: 'error', text: `Could not load pings: ${err instanceof Error ? err.message : 'network error'}` });
+      setMessages([]);
+      setNote({ kind: 'error', text: `Could not load messages: ${err instanceof Error ? err.message : 'network error'}` });
     }
   };
 
   const openTab = (id: TabId) => {
     setTab(id);
-    if (id === 'pings') void loadPings();
+    if (id === 'messages') void loadMessages();
   };
 
   const current = TABS.find((t) => t.id === tab);
@@ -205,8 +214,8 @@ function Editor({ user, onOut }: { user: string; onOut: (why: string) => void })
               {changed(t.keys) && <span aria-label="unsaved changes">•</span>}
             </button>
           ))}
-          <button type="button" aria-current={tab === 'pings' ? 'page' : undefined} onClick={() => openTab('pings')}>
-            Hire pings
+          <button type="button" aria-current={tab === 'messages' ? 'page' : undefined} onClick={() => openTab('messages')}>
+            Messages
           </button>
         </nav>
         <div className="adm-side-foot">
@@ -219,7 +228,7 @@ function Editor({ user, onOut }: { user: string; onOut: (why: string) => void })
       </aside>
 
       <main className="adm adm-main">
-      <h1>{current?.label ?? 'Hire pings'}</h1>
+      <h1>{current?.label ?? 'Messages'}</h1>
 
       {note && (
         <p className={note.kind === 'error' ? 'adm-note is-error' : 'adm-note'} role={note.kind === 'error' ? 'alert' : 'status'}>
@@ -230,24 +239,31 @@ function Editor({ user, onOut }: { user: string; onOut: (why: string) => void })
       {current && doc && <Fields fields={current.fields} value={doc} onChange={setDoc} />}
       {current && !doc && !note && <p className="adm-mono">Loading…</p>}
 
-      {tab === 'pings' && (
+      {tab === 'messages' && (
         <>
-          <p className="adm-mono">Each row is one visitor who held the “Hold to hire” button. Newest first.</p>
-          {pings === null ? (
+          <p className="adm-mono">Sent from the “Start a project” form on the site. Newest first.</p>
+          {messages === null ? (
             <p className="adm-mono">Loading…</p>
-          ) : pings.length === 0 ? (
-            <p className="adm-mono">No pings to show.</p>
+          ) : messages.length === 0 ? (
+            <p className="adm-mono">No messages yet.</p>
           ) : (
-            <ul className="adm-list">
-              {pings.map((p, i) => (
-                <li key={i}>{new Date(p.at).toLocaleString()}</li>
+            <ul className="adm-msgs">
+              {messages.map((m, i) => (
+                <li key={i}>
+                  <div className="adm-row">
+                    <strong className="adm-grow">{m.name}</strong>
+                    <span className="adm-mono">{new Date(m.at).toLocaleString()}</span>
+                  </div>
+                  <a href={replyLink(m.contact)} target="_blank" rel="noreferrer">{m.contact}</a>
+                  <p>{m.message}</p>
+                </li>
               ))}
             </ul>
           )}
         </>
       )}
 
-      {doc && (
+      {doc && tab !== 'messages' && (
         <div className="adm-bar">
           <span className="adm-mono adm-grow">{dirty ? 'Unsaved changes' : 'No changes'}</span>
           <button type="button" className="adm-btn" disabled={!dirty || busy} onClick={() => {

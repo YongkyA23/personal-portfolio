@@ -233,6 +233,7 @@ const PROFILE: Field[] = [
   { k: 'cvUrl', label: 'CV link', kind: 'text', hint: 'A path like /Yongky_Anthonychow_CV.pdf or an https:// link.' },
   { k: 'linkedin', label: 'LinkedIn', kind: 'text', hint: 'https:// link' },
   { k: 'github', label: 'GitHub', kind: 'text', hint: 'https:// link' },
+  { k: 'whatsapp', label: 'WhatsApp', kind: 'text', hint: 'Digits with country code, e.g. 6281234567890. Empty hides the WhatsApp button.' },
   { k: 'kicker', label: 'Kicker', kind: 'text', hint: 'Small line above the headline.' },
   { k: 'headline', label: 'Headline', kind: 'tuple', n: 2, hint: 'Two lines.' },
   { k: 'intro', label: 'Intro', kind: 'area' },

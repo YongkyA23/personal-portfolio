@@ -7,6 +7,18 @@ import path from 'node:path';
 import { validateContent } from '../shared/validate.js';
 import { SESSION_COOKIE, SESSION_HOURS, checkSession, createSession, readCookie, sameText, verifyPassword } from './auth.js';
 
+/** Returns what is wrong with a contact-form message, or null. */
+export function checkMessage({ name, contact, message }) {
+  const text = (v) => (typeof v === 'string' ? v.trim() : '');
+  if (!text(name)) return 'Please add your name.';
+  if (text(name).length > 120) return 'That name is too long.';
+  if (text(contact).length < 5) return 'Please add an email or WhatsApp number so I can reply.';
+  if (text(contact).length > 160) return 'That contact is too long.';
+  if (text(message).length < 10) return 'Tell me a little more about the project.';
+  if (text(message).length > 4000) return 'That message is too long; email works better for long briefs.';
+  return null;
+}
+
 const limiter = (limit, windowMs) =>
   rateLimit({
     windowMs,
@@ -139,16 +151,26 @@ export function createApp({ store, seed, admin, distDir, trustProxy }) {
     limiter(60, 60_000),
     requireAdmin,
     withStore(async (req, res) => {
-      res.json(await store.listPings());
+      res.json(await store.listMessages());
     }),
   );
 
+  // The public contact form. Spam guards: a per-address limit, length checks, and a
+  // hidden "website" field that people never see but form-filling bots do fill in.
   api.post(
-    '/hire',
+    '/contact',
     limiter(5, 60 * 60_000),
+    (req, res, next) => {
+      const body = req.body && typeof req.body === 'object' ? req.body : {};
+      if (typeof body.website === 'string' && body.website.trim()) return res.status(201).json({ ok: true });
+      const problem = checkMessage(body);
+      if (problem) return res.status(400).json({ error: problem });
+      next();
+    },
     withStore(async (req, res) => {
-      await store.addPing();
-      res.json({ ok: true });
+      const { name, contact, message } = req.body;
+      await store.addMessage({ name: name.trim(), contact: contact.trim(), message: message.trim() });
+      res.status(201).json({ ok: true });
     }),
   );
 

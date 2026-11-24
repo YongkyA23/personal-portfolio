@@ -33,7 +33,7 @@ To work with saving and the admin page, point it at a MySQL database:
 DATABASE_URL='mysql://portfolio:secret@127.0.0.1:3306/portfolio' ADMIN_USER=admin ADMIN_PASSWORD_HASH="$(echo 'dev-password' | node server/auth.js | cut -d= -f2)" npm run dev
 ```
 
-The two tables (`site_content`, `hire_pings`) are created on first start.
+The two tables (`site_content`, `contact_messages`) are created on first start.
 
 ## Checks
 
@@ -68,14 +68,18 @@ Things worth knowing:
   by `|`, plus `.`, `?`, `-` and `\b`. Groups and repetition are refused so a
   pattern can never freeze a visitor's browser. First match wins, and `fallbackAnswer` is used when nothing matches. There is no live
   AI model behind it.
-- **Hire pings** lists when a visitor held the "Hold to hire" button. A ping
-  carries no contact details; it is a counter, not a message.
+- **Messages** lists what visitors sent with the "Start a project" form:
+  name, email or WhatsApp, and the brief. Clicking the contact opens a reply.
+  The form is limited to 5 messages per hour per address and drops bot
+  submissions that fill a hidden field.
+- **WhatsApp** on the profile (digits with country code) shows a WhatsApp
+  button next to the email; leave it empty to hide it.
 - The CV button points at `profile.cvUrl`. The file shipped in
   `public/Yongky_Anthonychow_CV.pdf` has the phone number removed because
   this repository and the site are public.
 
 If the database is ever down, the site keeps working with the bundled
-content from `content/content.json`; only saving and pings stop.
+content from `content/content.json`; only saving and the contact form stop.
 
 ## Deploy on your own server
 

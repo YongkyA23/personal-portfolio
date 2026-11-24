@@ -84,6 +84,7 @@ describe('validateContent', () => {
 describe('localAnswer', () => {
   it('matches a keyword', () => {
     expect(localAnswer('tell me about the Roblox game', seed)).toContain('Warteg Sultan');
+    expect(localAnswer('are you a vibecoder?', seed)).toContain('vibecoder, with the engineering kept in');
   });
   it('falls back when nothing matches', () => {
     expect(localAnswer('zzzz', seed)).toBe(seed.fallbackAnswer);

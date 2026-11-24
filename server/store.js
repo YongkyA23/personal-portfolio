@@ -1,4 +1,4 @@
-// Storage for the editable content document and the hire pings.
+// Storage for the editable content document and the messages sent from the contact form.
 // Two implementations share one shape: MySQL for production, memory for tests.
 import mysql from 'mysql2/promise';
 
@@ -7,12 +7,14 @@ import mysql from 'mysql2/promise';
  * @property {() => Promise<void>} init                 Create tables if missing.
  * @property {() => Promise<object|null>} getContent    The saved document, or null when none is saved.
  * @property {(doc: object) => Promise<void>} setContent
- * @property {() => Promise<void>} addPing
- * @property {() => Promise<Array<{at: string}>>} listPings  Newest first, at most 500.
+ * @property {(m: {name: string, contact: string, message: string}) => Promise<void>} addMessage
+ * @property {() => Promise<Message[]>} listMessages  Newest first, at most 500.
  * @property {() => Promise<void>} close
  */
 
-const MAX_PINGS = 500;
+/** @typedef {{ at: string, name: string, contact: string, message: string }} Message */
+
+const MAX_MESSAGES = 500;
 
 /**
  * Wraps a one-time setup so it runs on first use and is retried after a failure.
@@ -34,7 +36,7 @@ export function createLazyInit(init) {
 /** @returns {Store} */
 export function createMemoryStore() {
   let content = null;
-  const pings = [];
+  const messages = [];
   return {
     async init() {},
     async getContent() {
@@ -43,12 +45,12 @@ export function createMemoryStore() {
     async setContent(doc) {
       content = structuredClone(doc);
     },
-    async addPing() {
-      pings.unshift({ at: new Date().toISOString() });
-      pings.length = Math.min(pings.length, MAX_PINGS);
+    async addMessage({ name, contact, message }) {
+      messages.unshift({ at: new Date().toISOString(), name, contact, message });
+      messages.length = Math.min(messages.length, MAX_MESSAGES);
     },
-    async listPings() {
-      return [...pings];
+    async listMessages() {
+      return messages.map((m) => ({ ...m }));
     },
     async close() {},
   };
@@ -77,8 +79,11 @@ export function createMysqlStore(databaseUrl) {
          ) CHARACTER SET utf8mb4`,
       );
       await pool.query(
-        `CREATE TABLE IF NOT EXISTS hire_pings (
+        `CREATE TABLE IF NOT EXISTS contact_messages (
            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+           name VARCHAR(120) NOT NULL,
+           contact VARCHAR(160) NOT NULL,
+           message TEXT NOT NULL,
            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
          ) CHARACTER SET utf8mb4`,
       );
@@ -101,14 +106,14 @@ export function createMysqlStore(databaseUrl) {
         [JSON.stringify(doc)],
       );
     },
-    async addPing() {
+    async addMessage({ name, contact, message }) {
       await ensure();
-      await pool.query('INSERT INTO hire_pings () VALUES ()');
+      await pool.query('INSERT INTO contact_messages (name, contact, message) VALUES (?, ?, ?)', [name, contact, message]);
     },
-    async listPings() {
+    async listMessages() {
       await ensure();
-      const [rows] = await pool.query(`SELECT created_at FROM hire_pings ORDER BY id DESC LIMIT ${MAX_PINGS}`);
-      return rows.map((row) => ({ at: new Date(row.created_at).toISOString() }));
+      const [rows] = await pool.query(`SELECT name, contact, message, created_at FROM contact_messages ORDER BY id DESC LIMIT ${MAX_MESSAGES}`);
+      return rows.map((row) => ({ at: new Date(row.created_at).toISOString(), name: row.name, contact: row.contact, message: row.message }));
     },
     async close() {
       await pool.end();

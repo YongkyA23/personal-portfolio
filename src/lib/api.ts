@@ -7,7 +7,6 @@ import type { Content } from '../content/types';
  */
 let backend: boolean | null = null;
 
-export const hasBackend = () => backend === true;
 
 async function json(res: Response): Promise<unknown> {
   const type = res.headers.get('content-type') || '';
@@ -26,22 +25,23 @@ export async function fetchContent(signal?: AbortSignal): Promise<Content | null
   }
 }
 
-async function post(path: string, body: unknown, timeoutMs: number): Promise<unknown> {
-  const res = await fetch(path, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', accept: 'application/json' },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(timeoutMs),
-  });
-  return json(res);
-}
+export type ContactForm = { name: string; contact: string; message: string; website: string };
 
-export async function sendHirePing(): Promise<boolean> {
-  if (backend !== true) return false;
+/** Sends the contact form. Resolves to null on success, otherwise a message to show the visitor. */
+export async function sendContact(form: ContactForm): Promise<string | null> {
+  if (backend === false) return 'The form is offline on this copy of the site.';
   try {
-    await post('/api/hire', {}, 10_000);
-    return true;
+    const res = await fetch('/api/contact', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify(form),
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (res.ok) return null;
+    if (res.status === 429) return 'Too many messages from this connection. Try again later.';
+    const body = (await res.json().catch(() => null)) as { error?: string } | null;
+    return body?.error || 'It could not be sent right now.';
   } catch {
-    return false;
+    return 'The server could not be reached.';
   }
 }

@@ -22,6 +22,9 @@ export function validateContent(c) {
   if (!isStrArr(p.about)) return 'profile.about must be a list of strings';
   if (!Array.isArray(p.marquee) || p.marquee.length !== 2 || !p.marquee.every((r) => isStrArr(r) && r.length > 0)) return 'profile.marquee must be two non-empty lists';
   if (!Array.isArray(p.stats) || !p.stats.every((s) => s && isStr(s.value) && isStr(s.label))) return 'profile.stats entries need value and label';
+  if (p.whatsapp !== undefined && !(isStr(p.whatsapp) && /^(\d{8,15})?$/.test(p.whatsapp))) {
+    return 'profile.whatsapp must be digits only with the country code, e.g. 6281234567890';
+  }
   for (const k of ['linkedin', 'github']) {
     if (!/^https:\/\//.test(p[k])) return `profile.${k} must be an https URL`;
   }

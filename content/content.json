@@ -2,7 +2,7 @@
   "profile": {
     "name": "Yongky Anthonychow",
     "initials": "YA",
-    "role": "AI Builder · Full-Stack",
+    "role": "Founder & Full-Stack Developer",
     "location": "JAKARTA, ID",
     "tz": "UTC+7",
     "availability": "Available for select projects",
@@ -10,13 +10,13 @@
     "linkedin": "https://linkedin.com/in/yongky-anthonychow",
     "github": "https://github.com/YongkyA23",
     "cvUrl": "/Yongky_Anthonychow_CV.pdf",
-    "kicker": "~/yongky · overview",
-    "headline": ["Shipping real products", "with AI as the crew."],
-    "intro": "I’m Yongky, an AI Builder and full-stack developer in Jakarta. I direct Claude Code and Codex to build, then review, test and fix everything they produce before it reaches production.",
-    "statement": "I don’t just prompt and hope. I write the PRD, direct Claude Code and Codex, then review, test and fix every line until it holds up in production. Four internal products, two live apps and a Roblox game later, that is still the job.",
+    "kicker": "~/yongky · vibecoder",
+    "headline": ["Shipping real products,", "vibecoded end to end."],
+    "intro": "I’m Yongky, founder of Turudev Tech and a full-stack developer in Jakarta. A vibecoder who keeps the engineering: I direct Claude Code and Codex to build, then review, test and fix everything they produce before it reaches production.",
+    "statement": "Vibecoding, with the engineering kept in. I don’t just prompt and hope. I write the PRD, direct Claude Code and Codex, then review, test and fix every line until it holds up in production. Four internal products, two live apps and a Roblox game later, that is still the job.",
     "contactHeadline": ["Let’s build", "something that ships."],
     "marquee": [
-      ["AI Builder", "Full-Stack", "Founder", "Claude Code", "Codex", "Jakarta"],
+      ["Founder", "Full-Stack", "Vibecoder", "Claude Code", "Codex", "Jakarta"],
       ["Ship", "Review", "Test", "Fix", "Deploy", "Repeat"]
     ],
     "stats": [
@@ -31,7 +31,7 @@
       "fun fact: Warteg Sultan! has 142 passing tests"
     ],
     "about": [
-      "I direct Claude Code and Codex to ship real products, then review, test and fix everything before it reaches production.",
+      "A vibecoder who ships: I direct Claude Code and Codex to build real products, then review, test and fix everything before it reaches production.",
       "Founder of Turudev Tech. Junior IT Staff at PT Hantam Kreasi Utama. BINUS Information Systems, GPA 3.84."
     ]
   },
@@ -68,6 +68,7 @@
     { "match": "turudev|founder|studio|company", "text": "Yongky founded Turudev Tech in 2024, an AI software studio building AI assistants, workflow automation and data tools." },
     { "match": "hantam|job|experience|current|role", "text": "Since February 2025 he has been Junior IT Staff at PT Hantam Kreasi Utama, where he shipped 4 internal products end to end with Claude Code and Codex." },
     { "match": "stack|tech|language|framework|skill|tools", "text": "Claude Code, Codex and MCP for building; TypeScript, React, Next.js, NestJS, Laravel and Flutter for the product; PostgreSQL, Redis and Prisma for data; Docker, Proxmox, Nginx and WireGuard to run it." },
+    { "match": "vibe|vibecod", "text": "Yongky calls himself a vibecoder, with the engineering kept in: he writes the PRD, directs Claude Code and Codex to build, then reviews, tests and fixes everything himself before it ships. The AI writes fast; he answers for what reaches production." },
     { "match": "\\bai\\b|claude|codex|how|process|build", "text": "He turns requirements into a PRD, directs Claude Code and Codex to build against it, then reviews, tests and fixes the output before deploying to Linux servers." },
     { "match": "hire|available|contact|email|freelance|work with", "text": "Yes, he is open to select projects. Email yongkyanthony23@gmail.com or find him on LinkedIn at linkedin.com/in/yongky-anthonychow." },
     { "match": "ship|built|project|portfolio|made", "text": "Two live products (Empuan and Qi-R), four internal products at PT Hantam Kreasi Utama, client platforms such as Batiqiyan and the Desa Mangunkerta portal, plus a Roblox game, a monitoring bot and a self-hosted homelab." }
