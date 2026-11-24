@@ -328,3 +328,16 @@ main section h2:not(.dk-reveal){animation:dk-drift linear both;animation-timelin
 }
 }
 @media (prefers-reduced-motion: reduce){main section h2{animation:none !important}}
+
+/* hero: the "YA" monogram rendered in ASCII by three.js (src/three/asciiHero.ts), behind the text */
+.dk-ascii{position:absolute;z-index:0;top:0;right:0;bottom:0;width:48%;overflow:hidden;pointer-events:none;color:#6E6E6E;opacity:0;transition:opacity .8s ease;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 42%);mask-image:linear-gradient(90deg,transparent 0,#000 42%)}
+.dk-ascii.is-on{opacity:1}
+.dk-lamp-on .dk-ascii{color:#EDEDED}
+/* phones: a dim band behind the kicker and headline only, faded out before the intro paragraph */
+@media (max-width: 820px){.dk-ascii{width:100%;bottom:auto;height:min(78vw,420px);color:#333;-webkit-mask-image:linear-gradient(180deg,#000 55%,transparent);mask-image:linear-gradient(180deg,#000 55%,transparent)}}
+
+/* contact: the deploy card folds away while the paper plane (src/three/plane.ts) flies off */
+.dk-deploy{transition:transform .45s cubic-bezier(.6,0,.4,1),opacity .35s ease}
+.dk-deploy.is-folded{transform:scale(.18) rotate(-14deg);opacity:0}
+@media (prefers-reduced-motion: reduce){.dk-deploy{transition:none}}

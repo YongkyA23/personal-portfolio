@@ -1,4 +1,4 @@
-import { Fragment, memo, useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
+import { Fragment, memo, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { sx } from '../lib/css';
 import type { Profile } from '../content/types';
 import { sendContact, type ContactForm } from '../lib/api';
@@ -24,6 +24,8 @@ export const Contact = memo(function Contact({ profile, copied, onCopy }: Props)
   const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
   const [error, setError] = useState('');
   const [log, setLog] = useState<LogLine[]>([]);
+  const [folded, setFolded] = useState(false);
+  const deployRef = useRef<HTMLDivElement>(null);
   const prd = useMemo(() => draftPrd(form), [form]);
   const drafting = !!(form.name.trim() || form.message.trim());
 
@@ -58,6 +60,15 @@ export const Contact = memo(function Contact({ profile, copied, onCopy }: Props)
       setState('failed');
     } else {
       setLog((l) => [...l, { t: '✓ deployed to yongky’s inbox', kind: 'ok' }]);
+      // The card folds away and a paper plane (three.js, loaded now) carries it off the page.
+      const card = deployRef.current;
+      if (card && !prefersReducedMotion()) {
+        await sleep(450);
+        const rect = card.getBoundingClientRect();
+        setFolded(true);
+        await import('../three/plane').then((m) => m.flyPlane(rect)).catch(() => {});
+        setFolded(false);
+      }
       setState('sent');
     }
   };
@@ -106,7 +117,7 @@ export const Contact = memo(function Contact({ profile, copied, onCopy }: Props)
     <button type="submit" className="dk-solid dk-shine" style={sx(`min-height: 52px; border: 0; border-radius: 14px; background: #EDEDED; color: #070707; font-size: 15px; font-weight: 500; display: inline-flex; align-items: center; justify-content: center; gap: 8px`)}>Send message<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
     </form>
     ) : (
-    <div className="dk-form dk-deploy" role="status" aria-live="polite">
+    <div ref={deployRef} className={folded ? 'dk-form dk-deploy is-folded' : 'dk-form dk-deploy'} role="status" aria-live="polite">
     <div className="dk-deploy-bar"><span></span><span></span><span></span><span>~/inbox — deploy</span></div>
     <div className="dk-deploy-log">
     {log.map((l, i) => (<Fragment key={i}><span className={`is-${l.kind}`}>{l.t}</span></Fragment>))}

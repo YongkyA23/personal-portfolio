@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { sx } from '../lib/css';
 import type { Profile } from '../content/types';
 import { spot } from './pointer';
@@ -23,12 +23,50 @@ interface Props {
 
 const WHOLE_NUMBER = /^\d+$/;
 
+const hasWebGL = () => {
+  try {
+    const c = document.createElement('canvas');
+    return !!(c.getContext('webgl2') || c.getContext('webgl'));
+  } catch {
+    return false;
+  }
+};
+
 export const Hero = memo(function Hero({ profile, d, kickerRun, onPalette }: Props) {
   const openPal = onPalette;
   const last = profile.stats.length - 1;
+  const heroRef = useRef<HTMLElement>(null);
+  const asciiRef = useRef<HTMLDivElement>(null);
+  const [ascii, setAscii] = useState(false);
+
+  // The ASCII monogram (three.js) loads after the page is up; the outlined initials stay until it is ready,
+  // and remain the fallback where WebGL is missing.
+  useEffect(() => {
+    const host = asciiRef.current;
+    const hero = heroRef.current;
+    if (!host || !hero || !hasWebGL()) return;
+    let dead = false;
+    let inst: { destroy(): void } | null = null;
+    const go = () =>
+      import('../three/asciiHero')
+        .then((m) => {
+          if (dead) return;
+          inst = m.mountAsciiHero(host, hero);
+          setAscii(true);
+        })
+        .catch(() => {});
+    const idle = window.requestIdleCallback ? window.requestIdleCallback(go, { timeout: 2500 }) : window.setTimeout(go, 800);
+    return () => {
+      dead = true;
+      if (window.cancelIdleCallback) window.cancelIdleCallback(idle);
+      else window.clearTimeout(idle);
+      inst?.destroy();
+    };
+  }, []);
   return (
-    <section id="overview" onMouseMove={spot} className="dk-spot" style={sx(`position: relative; overflow: clip`)}>
-    <div aria-hidden="true" className="dk-para" style={sx(`position: absolute; right: -6%; top: 4%; font-weight: 600; font-size: clamp(260px, 36vw, 520px); line-height: 0.8; letter-spacing: -0.08em; color: transparent; -webkit-text-stroke: 1px #1E1E1E; pointer-events: none; z-index: 0`)}>{profile.initials}</div>
+    <section ref={heroRef} id="overview" onMouseMove={spot} className="dk-spot" style={sx(`position: relative; overflow: clip`)}>
+    <div ref={asciiRef} aria-hidden="true" className={ascii ? 'dk-ascii is-on' : 'dk-ascii'}></div>
+    <div aria-hidden="true" className="dk-para" style={sx(`opacity: ${ascii ? 0 : 1}; transition: opacity .6s ease; position: absolute; right: -6%; top: 4%; font-weight: 600; font-size: clamp(260px, 36vw, 520px); line-height: 0.8; letter-spacing: -0.08em; color: transparent; -webkit-text-stroke: 1px #1E1E1E; pointer-events: none; z-index: 0`)}>{profile.initials}</div>
     <div aria-hidden="true" className="dk-para" style={sx(`position: absolute; left: 10%; top: -20%; width: 720px; height: 720px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,0.06), rgba(255,255,255,0) 62%); pointer-events: none; z-index: 0`)}></div>
     <div aria-hidden="true" style={sx(`position: absolute; inset: 0; background: radial-gradient(#161616 1px, transparent 1px) 0 0/28px 28px; -webkit-mask: linear-gradient(180deg, #000, transparent 85%); mask: linear-gradient(180deg, #000, transparent 85%); pointer-events: none; z-index: 0`)}></div>
     <span aria-hidden="true" className="dk-secret" style={sx(`position: absolute; right: 8%; bottom: 120px; z-index: 1; font-family: var(--mono); font-size: 13px; line-height: 1.6; text-align: right; white-space: pre-line`)}>{profile.secrets[0]}</span>
