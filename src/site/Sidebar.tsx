@@ -4,6 +4,9 @@ import type { Profile } from '../content/types';
 import { SECTIONS, type SectionId } from './icons';
 import { Scramble } from './Scramble';
 
+// Ball-chain beads of the flashlight pull cord, top to bottom.
+const BEADS = [10, 16, 22, 28, 34, 40, 45];
+
 interface Props {
   profile: Profile;
   enterDelay: string;
@@ -24,8 +27,6 @@ export const Sidebar = memo(function Sidebar({ profile, enterDelay, active, lamp
   const openTerm = onTerminal;
   const replay = onReplay;
   const cordAnim = cordFlip ? 'dk-pull-a' : 'dk-pull-b';
-  const cordKnob = lamp ? '#FFFFFF' : '#0A0A0A';
-  const cordGlow = lamp ? '0 0 16px rgba(255,255,255,0.8)' : 'none';
   const nav = SECTIONS.map((s, index) => {
     const on = s.id === active;
     return {
@@ -43,9 +44,20 @@ export const Sidebar = memo(function Sidebar({ profile, enterDelay, active, lamp
   });
   return (
     <aside className="dk-side dk-side-in" style={sx(`position: sticky; top: 0; height: 100vh; flex: 0 0 264px; box-sizing: border-box; background: #0A0A0A; border-right: 1px solid #1C1C1C; padding: 24px 16px; display: flex; flex-direction: column; gap: 20px; z-index: 5; animation-delay: ${d.side}`)}>
-    <button type="button" onClick={pullCord} aria-label="Toggle flashlight mode" aria-pressed={lamp} style={sx(`position: absolute; right: 6px; top: 0; width: 32px; height: 70px; border: 0; background: transparent; padding: 0; display: flex; flex-direction: column; align-items: center; animation: ${cordAnim} .55s cubic-bezier(.2,.8,.2,1)`)}>
-    <span aria-hidden="true" style={sx(`width: 1px; height: 46px; background: #3A3A3A`)}></span>
-    <span aria-hidden="true" style={sx(`width: 12px; height: 12px; border-radius: 50%; border: 1px solid #EDEDED; background: ${cordKnob}; box-shadow: ${cordGlow}`)}></span>
+    <button type="button" onClick={pullCord} aria-label="Toggle flashlight mode" aria-pressed={lamp} data-cursor="Pull" className={lamp ? 'dk-cord is-on' : 'dk-cord'}>
+    <span aria-hidden="true" className="dk-cord-pull" style={sx(`animation: ${cordAnim} .7s cubic-bezier(.3,1.4,.5,1)`)}>
+    <svg width="32" height="88" viewBox="0 0 32 88" fill="none">
+    <rect className="dk-cord-mount" x="11" y="0" width="10" height="5" rx="2" />
+    {BEADS.map((y) => (
+    <circle key={y} className="dk-cord-bead" cx="16" cy={y} r="1.7" />
+    ))}
+    <g transform="translate(0 -12)">
+    <rect className="dk-cord-cap" x="13" y="60" width="6" height="6" rx="1.5" />
+    <path className="dk-cord-handle" d="M16 66c-3.2 4.6-6.5 9.8-6.5 15.2a6.5 6.5 0 0 0 13 0c0-5.4-3.3-10.6-6.500-15.200z" />
+    <path className="dk-cord-shine" d="M13.200 80.500c0-2.400 1-4.800 2.300-7" strokeLinecap="round" />
+    </g>
+    </svg>
+    </span>
     </button>
 
     <div style={sx(`display: flex; align-items: center; gap: 12px; padding: 0 20px 0 8px`)}>
