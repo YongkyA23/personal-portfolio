@@ -36,17 +36,6 @@ async function post(path: string, body: unknown, timeoutMs: number): Promise<unk
   return json(res);
 }
 
-/** Asks the live agent. Resolves to null when it is unavailable, so the caller can answer locally. */
-export async function askAgent(question: string): Promise<string | null> {
-  if (backend !== true) return null;
-  try {
-    const data = (await post('/api/ask', { question }, 30_000)) as { answer?: unknown };
-    return typeof data.answer === 'string' && data.answer ? data.answer : null;
-  } catch {
-    return null;
-  }
-}
-
 export async function sendHirePing(): Promise<boolean> {
   if (backend !== true) return false;
   try {
