@@ -2,12 +2,10 @@
 import express from 'express';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { createHash, timingSafeEqual } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { validateContent } from '../shared/validate.js';
-
-const digest = (value) => createHash('sha256').update(String(value)).digest();
+import { SESSION_COOKIE, SESSION_HOURS, checkSession, createSession, readCookie, sameText, verifyPassword } from './auth.js';
 
 const limiter = (limit, windowMs) =>
   rateLimit({
@@ -22,11 +20,11 @@ const limiter = (limit, windowMs) =>
  * @param {object} options
  * @param {import('./store.js').Store | null} options.store  null when no database is configured.
  * @param {object} options.seed          Content served when nothing is saved or the database is down.
- * @param {string} options.adminToken    Empty string disables the admin routes.
+ * @param {{ user: string, passwordHash: string }} [options.admin]  Missing or empty disables the admin routes.
  * @param {string} [options.distDir]     Built site to serve, if it exists.
  * @param {string|number} [options.trustProxy]
  */
-export function createApp({ store, seed, adminToken, distDir, trustProxy }) {
+export function createApp({ store, seed, admin, distDir, trustProxy }) {
   const app = express();
   app.disable('x-powered-by');
   if (trustProxy) app.set('trust proxy', trustProxy);
@@ -54,13 +52,18 @@ export function createApp({ store, seed, adminToken, distDir, trustProxy }) {
   );
   app.use(express.json({ limit: '300kb' }));
 
+  const adminOn = !!(admin?.user && admin?.passwordHash);
+  const signedIn = (req) => adminOn && checkSession(admin.passwordHash, readCookie(req.headers.cookie, SESSION_COOKIE));
+
   const requireAdmin = (req, res, next) => {
-    if (!adminToken) return res.status(503).json({ error: 'Admin is disabled: set ADMIN_TOKEN on the server.' });
-    const header = req.get('authorization') || '';
-    const given = header.startsWith('Bearer ') ? header.slice(7) : '';
-    if (!given || !timingSafeEqual(digest(given), digest(adminToken))) return res.status(401).json({ error: 'Wrong admin token.' });
+    if (!adminOn) return res.status(503).json({ error: 'Admin is disabled: set ADMIN_USER and ADMIN_PASSWORD_HASH on the server.' });
+    if (!signedIn(req)) return res.status(401).json({ error: 'Your session has ended. Sign in again.' });
     next();
   };
+
+  // HttpOnly so page scripts cannot read it; SameSite=Strict so other sites cannot send it.
+  const sessionCookie = (req, value, maxAge) =>
+    `${SESSION_COOKIE}=${value}; Path=/api; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${req.secure ? '; Secure' : ''}`;
 
   // Runs a storage call; a missing or failing database becomes a clean 503.
   const withStore = (handler) => async (req, res) => {
@@ -77,6 +80,27 @@ export function createApp({ store, seed, adminToken, distDir, trustProxy }) {
   api.use((req, res, next) => {
     res.set('Cache-Control', 'no-store');
     next();
+  });
+
+  api.post('/login', limiter(10, 15 * 60_000), async (req, res) => {
+    if (!adminOn) return res.status(503).json({ error: 'Admin is disabled: set ADMIN_USER and ADMIN_PASSWORD_HASH on the server.' });
+    const { username = '', password = '' } = req.body || {};
+    // Always run the slow hash check so a wrong username takes as long as a wrong password.
+    const passOk = await verifyPassword(password, admin.passwordHash);
+    if (!sameText(username, admin.user) || !passOk) return res.status(401).json({ error: 'Wrong username or password.' });
+    res.set('Set-Cookie', sessionCookie(req, createSession(admin.passwordHash), SESSION_HOURS * 3600));
+    res.json({ user: admin.user });
+  });
+
+  api.post('/logout', (req, res) => {
+    res.set('Set-Cookie', sessionCookie(req, '', 0));
+    res.json({ ok: true });
+  });
+
+  api.get('/session', (req, res) => {
+    if (!adminOn) return res.status(503).json({ error: 'Admin is disabled: set ADMIN_USER and ADMIN_PASSWORD_HASH on the server.' });
+    if (!signedIn(req)) return res.status(401).json({ error: 'Not signed in.' });
+    res.json({ user: admin.user });
   });
 
   // The public page must not go down with the database: fall back to the seed.

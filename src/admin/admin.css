@@ -18,3 +18,12 @@
 .adm-list{margin:0;padding:0;list-style:none;border-top:1px solid #1C1C1C}
 .adm-list li{padding:12px 4px;border-bottom:1px solid #1C1C1C;font-family:var(--mono);font-size:13px;color:#C9C9C9}
 .adm a{color:#EDEDED}
+.adm-login{justify-content:center;align-items:center}
+.adm-card{width:100%;max-width:360px;display:flex;flex-direction:column;gap:16px;border:1px solid #1C1C1C;border-radius:20px;background:#0A0A0A;padding:32px 28px}
+.adm-card h1{font-size:24px}
+.adm-card .adm-mono{margin:-12px 0 4px}
+.adm-card a.adm-mono{margin:0;text-align:center;text-decoration:none}
+.adm-field{display:flex;flex-direction:column;gap:6px;font-size:13px;color:#C9C9C9}
+.adm-field input{font-family:var(--sans);font-size:15px}
+.adm-field input:focus{border-color:#5A5A5A}
+.adm-card .adm-btn{width:100%;margin-top:4px}
