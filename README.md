@@ -50,10 +50,13 @@ and writes the production site to `dist/`.
 
 ## Editing content
 
-Open `/admin`, sign in with the admin username and password, edit a section and press Save. The session lasts 12 hours; changing the password signs every session out. Each
-section is JSON; anything that would break the page (a missing field, two
-projects with the same `id`, an invalid pattern) is refused with a message
-naming the field. Visitors see the change on their next page load.
+Open `/admin`, sign in with the admin username and password, edit a section and press Save. The session lasts 12 hours; changing the password signs every session out. Pick a
+section in the sidebar and edit it as a form: lists such as a project's stack
+take one item per line, and projects, experience, stack groups and answers
+can be added, reordered and deleted. Anything that would break the page (a
+missing field, two projects with the same `id`, an invalid pattern) is
+refused with a message naming the item and field. The form fields live in
+`src/admin/Form.tsx`. Visitors see the change on their next page load.
 
 Things worth knowing:
 
