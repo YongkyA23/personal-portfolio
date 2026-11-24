@@ -176,3 +176,28 @@ to PDF, and the PDF text is checked for the number before it is committed.
 
 File layout inside `src/`, component prop shapes, the exact admin layout,
 test selection beyond the pure functions named above, README wording.
+
+## Changes agreed on 2026-11-24 (these override the text above)
+
+Yongky approved the design with two changes and asked for it to be built
+through to the end without further check-ins.
+
+1. **Storage is MySQL, not a JSON file.** Driver `mysql2`. Connection from
+   `DATABASE_URL` (`mysql://user:pass@host:3306/dbname`). Two tables,
+   created on start if missing:
+   - `site_content (id TINYINT PRIMARY KEY, body JSON NOT NULL, updated_at
+     TIMESTAMP)`, a single row with `id = 1` holding the whole content
+     document. One document, because the site always reads and writes it
+     whole and the validator already works on that shape.
+   - `hire_pings (id BIGINT AUTO_INCREMENT PRIMARY KEY, created_at
+     TIMESTAMP)`.
+   If the row is missing the API serves the bundled seed. If the database is
+   unreachable, `GET /api/content` still serves the seed (the public site
+   must not go down with the database), and writes return 503. The
+   non-goal "A database" is withdrawn. The storage code sits behind a small
+   interface so tests can run it against an in-memory fake.
+2. **No live AI agent for now.** `POST /api/ask` and the Anthropic SDK are
+   removed. The palette's "Ask AI" answers from the canned answers in the
+   content, which Yongky can edit in the admin. A Gemini-backed agent may be
+   added later; nothing in this build depends on it. The related anti-goal
+   about an unbounded API bill no longer applies.
