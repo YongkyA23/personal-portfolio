@@ -5,6 +5,8 @@ import { createWorld } from './physics';
 function setup() {
   const box = { clientWidth: 600, clientHeight: 400, getBoundingClientRect: () => ({ left: 0, top: 0 }) } as unknown as HTMLElement;
   const chip = { offsetWidth: 100, offsetHeight: 40, style: {} as CSSStyleDeclaration } as unknown as HTMLElement;
+  // Drop the chip at the left wall so a throw to the right always has room.
+  vi.spyOn(Math, 'random').mockReturnValue(0);
   const world = createWorld(box, [chip]);
   for (let i = 0; i < 120; i++) world.step(); // let it land
   const x = () => Number(/translate3d\(([-\d.]+)px/.exec(chip.style.transform)![1]);

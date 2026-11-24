@@ -1,46 +1,12 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { validateContent } from '../../shared/validate.js';
-import type { Content } from '../content/types';
+import { Fields, TABS, friendly, type Obj } from './Form';
 import './admin.css';
 
-const TABS = [
-  { id: 'profile', label: 'Profile', keys: ['profile'] },
-  { id: 'projects', label: 'Projects', keys: ['projects'] },
-  { id: 'experience', label: 'Experience', keys: ['experience'] },
-  { id: 'stack', label: 'Stack', keys: ['stack'] },
-  { id: 'answers', label: 'Answers', keys: ['answers', 'fallbackAnswer'] },
-] as const;
-
-type TabId = (typeof TABS)[number]['id'] | 'pings';
-type Drafts = Record<string, string>;
+type TabId = string;
 type Note = { kind: 'ok' | 'error'; text: string } | null;
 
-const pretty = (value: unknown) => JSON.stringify(value, null, 2);
-
-function draftsFrom(content: Content): Drafts {
-  const source = content as unknown as Record<string, unknown>;
-  const drafts: Drafts = {};
-  for (const tab of TABS) {
-    drafts[tab.id] = tab.keys.length === 1 ? pretty(source[tab.keys[0]]) : pretty(Object.fromEntries(tab.keys.map((k) => [k, source[k]])));
-  }
-  return drafts;
-}
-
-/** Rebuilds the whole document from the per-tab editors. Throws with the tab name on bad JSON. */
-function assemble(drafts: Drafts): unknown {
-  const doc: Record<string, unknown> = {};
-  for (const tab of TABS) {
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(drafts[tab.id]);
-    } catch (err) {
-      throw new Error(`${tab.label}: not valid JSON (${err instanceof Error ? err.message : 'parse error'})`);
-    }
-    if (tab.keys.length === 1) doc[tab.keys[0]] = parsed;
-    else Object.assign(doc, Object.fromEntries(tab.keys.map((k) => [k, (parsed as Record<string, unknown> | null)?.[k]])));
-  }
-  return doc;
-}
+const pick = (doc: Obj, keys: string[]) => JSON.stringify(keys.map((k) => doc[k]));
 
 async function readError(res: Response): Promise<string> {
   try {
@@ -135,8 +101,8 @@ export default function Admin() {
 }
 
 function Editor({ user, onOut }: { user: string; onOut: (why: string) => void }) {
-  const [drafts, setDrafts] = useState<Drafts | null>(null);
-  const [saved, setSaved] = useState<Drafts | null>(null);
+  const [doc, setDoc] = useState<Obj | null>(null);
+  const [saved, setSaved] = useState<Obj | null>(null);
   const [tab, setTab] = useState<TabId>('profile');
   const [note, setNote] = useState<Note>(null);
   const [busy, setBusy] = useState(false);
@@ -147,8 +113,8 @@ function Editor({ user, onOut }: { user: string; onOut: (why: string) => void })
     fetch('/api/content', { signal: controller.signal })
       .then(async (res) => {
         if (!res.ok) throw new Error(await readError(res));
-        const initial = draftsFrom((await res.json()) as Content);
-        setDrafts(initial);
+        const initial = (await res.json()) as Obj;
+        setDoc(initial);
         setSaved(initial);
       })
       .catch((err: unknown) => {
@@ -158,7 +124,8 @@ function Editor({ user, onOut }: { user: string; onOut: (why: string) => void })
     return () => controller.abort();
   }, []);
 
-  const dirty = !!drafts && !!saved && TABS.some((t) => drafts[t.id] !== saved[t.id]);
+  const changed = (keys: string[]) => !!doc && !!saved && pick(doc, keys) !== pick(saved, keys);
+  const dirty = TABS.some((t) => changed(t.keys));
   useEffect(() => {
     if (!dirty) return;
     const warn = (e: BeforeUnloadEvent) => e.preventDefault();
@@ -181,17 +148,10 @@ function Editor({ user, onOut }: { user: string; onOut: (why: string) => void })
 
   const save = async (e: FormEvent) => {
     e.preventDefault();
-    if (!drafts || busy) return;
-    let doc: unknown;
-    try {
-      doc = assemble(drafts);
-    } catch (err) {
-      setNote({ kind: 'error', text: err instanceof Error ? err.message : 'Invalid JSON.' });
-      return;
-    }
+    if (!doc || busy) return;
     const problem = validateContent(doc);
     if (problem) {
-      setNote({ kind: 'error', text: `Not saved: ${problem}.` });
+      setNote({ kind: 'error', text: `Not saved: ${friendly(problem)}.` });
       return;
     }
     setBusy(true);
@@ -203,8 +163,8 @@ function Editor({ user, onOut }: { user: string; onOut: (why: string) => void })
         body: JSON.stringify(doc),
       });
       if (signedOut(res)) return;
-      if (!res.ok) throw new Error(await readError(res));
-      setSaved(drafts);
+      if (!res.ok) throw new Error(friendly(await readError(res)));
+      setSaved(doc);
       setNote({ kind: 'ok', text: 'Saved. The site shows it on the next page load.' });
     } catch (err) {
       setNote({ kind: 'error', text: `Not saved: ${err instanceof Error ? err.message : 'network error'}` });
@@ -213,7 +173,7 @@ function Editor({ user, onOut }: { user: string; onOut: (why: string) => void })
     }
   };
 
-  const loadPings = useCallback(async () => {
+  const loadPings = async () => {
     setPings(null);
     try {
       const res = await fetch('/api/messages');
@@ -225,7 +185,7 @@ function Editor({ user, onOut }: { user: string; onOut: (why: string) => void })
       setPings([]);
       setNote({ kind: 'error', text: `Could not load pings: ${err instanceof Error ? err.message : 'network error'}` });
     }
-  }, [onOut]);
+  };
 
   const openTab = (id: TabId) => {
     setTab(id);
@@ -233,37 +193,33 @@ function Editor({ user, onOut }: { user: string; onOut: (why: string) => void })
   };
 
   const current = TABS.find((t) => t.id === tab);
-  let parseError = '';
-  if (drafts && current) {
-    try {
-      JSON.parse(drafts[current.id]);
-    } catch (err) {
-      parseError = err instanceof Error ? err.message : 'Invalid JSON';
-    }
-  }
 
   return (
-    <form className="adm" onSubmit={save}>
-      <div className="adm-row">
-        <h1 className="adm-grow">Portfolio admin</h1>
-        <a href="/">← Back to the site</a>
-        <span className="adm-mono">{user}</span>
-        <button type="button" className="adm-btn" onClick={signOut}>
-          Sign out
-        </button>
-      </div>
-
-      <div className="adm-row" role="group" aria-label="Sections">
-        {TABS.map((t) => (
-          <button key={t.id} type="button" className="adm-btn" aria-pressed={tab === t.id} onClick={() => openTab(t.id)}>
-            {t.label}
-            {drafts && saved && drafts[t.id] !== saved[t.id] ? ' •' : ''}
+    <form className="adm-shell" onSubmit={save}>
+      <aside className="adm-side">
+        <div className="adm-brand">Portfolio admin</div>
+        <nav className="adm-nav" aria-label="Sections">
+          {TABS.map((t) => (
+            <button key={t.id} type="button" aria-current={tab === t.id ? 'page' : undefined} onClick={() => openTab(t.id)}>
+              {t.label}
+              {changed(t.keys) && <span aria-label="unsaved changes">•</span>}
+            </button>
+          ))}
+          <button type="button" aria-current={tab === 'pings' ? 'page' : undefined} onClick={() => openTab('pings')}>
+            Hire pings
           </button>
-        ))}
-        <button type="button" className="adm-btn" aria-pressed={tab === 'pings'} onClick={() => openTab('pings')}>
-          Hire pings
-        </button>
-      </div>
+        </nav>
+        <div className="adm-side-foot">
+          <span className="adm-mono">Signed in as {user}</span>
+          <a href="/">← Back to the site</a>
+          <button type="button" className="adm-btn is-small" onClick={signOut}>
+            Sign out
+          </button>
+        </div>
+      </aside>
+
+      <main className="adm adm-main">
+      <h1>{current?.label ?? 'Hire pings'}</h1>
 
       {note && (
         <p className={note.kind === 'error' ? 'adm-note is-error' : 'adm-note'} role={note.kind === 'error' ? 'alert' : 'status'}>
@@ -271,27 +227,8 @@ function Editor({ user, onOut }: { user: string; onOut: (why: string) => void })
         </p>
       )}
 
-      {current && drafts && (
-        <>
-          <textarea
-            aria-label={`${current.label} as JSON`}
-            aria-invalid={parseError ? true : undefined}
-            spellCheck={false}
-            value={drafts[current.id]}
-            onChange={(e) => setDrafts({ ...drafts, [current.id]: e.target.value })}
-          />
-          <div className="adm-row">
-            <span className="adm-mono adm-grow">{parseError ? `JSON error: ${parseError}` : dirty ? 'Unsaved changes' : 'No changes'}</span>
-            <button type="button" className="adm-btn" disabled={!dirty || busy} onClick={() => saved && setDrafts(saved)}>
-              Discard changes
-            </button>
-            <button type="submit" className="adm-btn is-solid" disabled={!dirty || busy}>
-              {busy ? 'Saving…' : 'Save'}
-            </button>
-          </div>
-        </>
-      )}
-      {current && !drafts && !note && <p className="adm-mono">Loading…</p>}
+      {current && doc && <Fields fields={current.fields} value={doc} onChange={setDoc} />}
+      {current && !doc && !note && <p className="adm-mono">Loading…</p>}
 
       {tab === 'pings' && (
         <>
@@ -309,6 +246,22 @@ function Editor({ user, onOut }: { user: string; onOut: (why: string) => void })
           )}
         </>
       )}
+
+      {doc && (
+        <div className="adm-bar">
+          <span className="adm-mono adm-grow">{dirty ? 'Unsaved changes' : 'No changes'}</span>
+          <button type="button" className="adm-btn" disabled={!dirty || busy} onClick={() => {
+              if (saved) setDoc(saved);
+              setNote(null);
+            }}>
+            Discard changes
+          </button>
+          <button type="submit" className="adm-btn is-solid" disabled={!dirty || busy}>
+            {busy ? 'Saving…' : 'Save'}
+          </button>
+        </div>
+      )}
+      </main>
     </form>
   );
 }

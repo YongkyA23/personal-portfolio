@@ -5,7 +5,8 @@
 .adm-grow{flex:1 1 220px;min-width:0}
 .adm input,.adm textarea{box-sizing:border-box;width:100%;border:1px solid #262626;border-radius:12px;background:#0C0C0C;color:#EDEDED;font-family:var(--mono);font-size:13px;line-height:1.6;padding:12px 14px}
 .adm input{min-height:44px;padding:0 14px}
-.adm textarea{min-height:58vh;resize:vertical;tab-size:2;white-space:pre;overflow:auto}
+.adm textarea{resize:vertical;font-family:var(--sans);font-size:14px}
+.adm textarea[wrap="off"]{white-space:pre;overflow-x:auto}
 .adm textarea[aria-invalid="true"]{border-color:#EDEDED}
 .adm-btn{min-height:44px;padding:0 18px;border-radius:12px;border:1px solid #262626;background:transparent;color:#EDEDED;font-size:14px;font-weight:500}
 .adm-btn:hover{background:#151515}
@@ -27,3 +28,45 @@
 .adm-field input{font-family:var(--sans);font-size:15px}
 .adm-field input:focus{border-color:#5A5A5A}
 .adm-card .adm-btn{width:100%;margin-top:4px}
+/* form editor */
+.adm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px 20px}
+.adm-wide{grid-column:1/-1}
+.adm-field{display:flex;flex-direction:column;gap:6px;font-size:13px;color:#C9C9C9;border:0;margin:0;padding:0;min-width:0}
+.adm-field legend{padding:0;margin-bottom:6px}
+fieldset.adm-field{gap:8px}
+.adm-field input,.adm-field select,.adm-field textarea{font-family:var(--sans);font-size:15px}
+.adm select{box-sizing:border-box;width:100%;min-height:44px;border:1px solid #262626;border-radius:12px;background:#0C0C0C;color:#EDEDED;padding:0 12px;font-size:15px}
+.adm-hint{font-size:12px;color:#8A8A8A}
+.adm-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}
+.adm-term-row{display:flex;gap:8px;align-items:center}
+.adm-term-row input:not([type=checkbox]){flex:1}
+.adm-check{display:flex;gap:6px;align-items:center;white-space:nowrap;font-size:13px}
+.adm .adm-check input{width:auto;min-height:0}
+.adm-list-edit{display:flex;flex-direction:column;gap:8px}
+.adm-list-title{margin:8px 0 0;font-size:13px;font-weight:500;color:#C9C9C9}
+.adm-item{border:1px solid #1C1C1C;border-radius:14px;background:#0A0A0A}
+.adm-item.is-open{border-color:#2E2E2E}
+.adm-item-head{width:100%;min-height:52px;display:flex;align-items:center;gap:14px;padding:0 16px;border:0;background:transparent;color:#EDEDED;font-size:15px;text-align:left;border-radius:14px}
+.adm-item-head:hover{background:#111}
+.adm-item-body{display:flex;flex-direction:column;gap:16px;padding:4px 16px 16px}
+.adm-btn.is-small{min-height:36px;padding:0 12px;font-size:13px}
+.adm-btn.is-danger{color:#FF8A8A;border-color:#3A2020}
+.adm-bar{position:sticky;bottom:0;display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px 0;background:#070707;border-top:1px solid #1C1C1C}
+/* layout: section menu in a sidebar on the left, a top bar on phones */
+.adm-shell{display:flex;min-height:100vh}
+.adm-side{position:sticky;top:0;height:100vh;flex:0 0 232px;box-sizing:border-box;border-right:1px solid #1C1C1C;background:#0A0A0A;padding:24px 14px;display:flex;flex-direction:column;gap:20px}
+.adm-brand{font-weight:500;font-size:16px;letter-spacing:-0.01em;padding:0 12px}
+.adm-nav{display:flex;flex-direction:column;gap:2px}
+.adm-nav button{min-height:40px;padding:0 12px;border:0;border-radius:10px;background:transparent;color:#9A9A9A;font-size:14px;display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left}
+.adm-nav button:hover{background:#111;color:#EDEDED}
+.adm-nav button[aria-current="page"]{background:#151515;color:#FFFFFF}
+.adm-side-foot{margin-top:auto;display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:0 12px;font-size:14px}
+.adm-main{flex:1 1 auto;min-width:0}
+@media (max-width:760px){
+  .adm-shell{flex-direction:column}
+  .adm-side{height:auto;flex:none;z-index:3;border-right:0;border-bottom:1px solid #1C1C1C;padding:12px;gap:10px}
+  .adm-brand{display:none}
+  .adm-nav{flex-direction:row;overflow-x:auto}
+  .adm-nav button{white-space:nowrap}
+  .adm-side-foot{flex-direction:row;align-items:center;flex-wrap:wrap;margin:0;padding:0 4px}
+}
