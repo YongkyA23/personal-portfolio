@@ -152,3 +152,29 @@ export function createWorld(box: HTMLElement, chips: HTMLElement[]): World {
     },
   };
 }
+
+type Vec = { x?: number | null; y?: number | null; z?: number | null } | null | undefined;
+
+/**
+ * Turns devicemotion readings into "the phone was shaken" moments.
+ * Uses acceleration without gravity when the device reports it, otherwise the jump between two
+ * gravity-included readings. A shake fires at most once per cooldown.
+ * ponytail: one fixed threshold (m/s²); tune it if real phones feel too eager or too dull.
+ */
+export function createShakeDetector(threshold = 14, cooldownMs = 800) {
+  let last = -Infinity;
+  let prev: { x: number; y: number; z: number } | null = null;
+  return (acc: Vec, withGravity: Vec, now: number): boolean => {
+    let mag: number;
+    if (acc && typeof acc.x === 'number') {
+      mag = Math.hypot(acc.x, acc.y ?? 0, acc.z ?? 0);
+    } else if (withGravity && typeof withGravity.x === 'number') {
+      const cur = { x: withGravity.x, y: withGravity.y ?? 0, z: withGravity.z ?? 0 };
+      mag = prev ? Math.hypot(cur.x - prev.x, cur.y - prev.y, cur.z - prev.z) : 0;
+      prev = cur;
+    } else return false;
+    if (mag < threshold || now - last < cooldownMs) return false;
+    last = now;
+    return true;
+  };
+}

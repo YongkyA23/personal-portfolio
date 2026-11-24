@@ -48,3 +48,23 @@ describe('physics throw', () => {
     expect(Math.abs(x() - at)).toBeLessThan(0.5);
   });
 });
+
+describe('shake detector', () => {
+  it('fires on a hard jolt, ignores small movement, and waits out the cooldown', async () => {
+    const { createShakeDetector } = await import('./physics');
+    const shook = createShakeDetector(14, 800);
+    expect(shook({ x: 2, y: 1, z: 0 }, null, 0)).toBe(false); // walking
+    expect(shook({ x: 18, y: 6, z: 2 }, null, 100)).toBe(true); // shake
+    expect(shook({ x: 20, y: 0, z: 0 }, null, 500)).toBe(false); // same shake, still cooling down
+    expect(shook({ x: 20, y: 0, z: 0 }, null, 1000)).toBe(true);
+  });
+
+  it('falls back to the change in gravity-included readings', async () => {
+    const { createShakeDetector } = await import('./physics');
+    const shook = createShakeDetector(14, 800);
+    expect(shook(null, { x: 0, y: 9.8, z: 0 }, 0)).toBe(false); // first reading only primes it
+    expect(shook(null, { x: 0.5, y: 9.6, z: 0.2 }, 50)).toBe(false); // phone at rest
+    expect(shook(null, { x: 16, y: -4, z: 3 }, 100)).toBe(true); // jolt
+    expect(shook({ x: null }, { x: null }, 2000)).toBe(false); // no sensor data
+  });
+});
