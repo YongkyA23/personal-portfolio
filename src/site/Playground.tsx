@@ -4,6 +4,7 @@ import type { StackGroup } from '../content/types';
 import { prefersReducedMotion } from '../lib/env';
 import { createWorld, type World } from '../lib/physics';
 import { Scramble } from './Scramble';
+import { techIcon } from './techIcons';
 
 interface Props {
   stack: StackGroup[];
@@ -26,7 +27,8 @@ export const Playground = memo(function Playground({ stack: groups, active }: Pr
             bg: lead ? '#EDEDED' : gi === 1 ? '#151515' : '#0A0A0A',
             color: lead ? '#070707' : '#EDEDED',
             border: lead ? '#EDEDED' : gi === 1 ? '#2A2A2A' : '#3A3A3A',
-            cls: lead ? 'dk-chip is-lead' : 'dk-chip',
+            icon: techIcon(t),
+            cls: `dk-chip${lead ? ' is-lead' : ''}${techIcon(t) ? ' is-icon' : ''}`,
           };
         }),
       ),
@@ -105,7 +107,7 @@ export const Playground = memo(function Playground({ stack: groups, active }: Pr
     <div ref={boxRef} className={boxCls} aria-hidden="true" onPointerMove={boxMove} onPointerUp={boxUp} onPointerCancel={boxUp} style={sx(`position: relative; border: 1px solid #1C1C1C; border-radius: 28px; background: radial-gradient(#141414 1px, transparent 1px) 0 0/24px 24px, #0A0A0A; overflow: hidden`)}>
     <span style={sx(`position: absolute; left: 24px; top: 20px; font-family: var(--mono); font-size: 12px; color: #8A8A8A`)}>grab, throw, stack</span>
     {chips.map((c, i) => (<Fragment key={i}>
-    <span className={c.cls} data-cursor="Drag" onPointerDown={grab(i)} style={sx(`position: absolute; left: 0; top: 0; transform: translate(-999px, -999px); white-space: nowrap; border-radius: 999px; font-weight: 500; letter-spacing: -0.01em; background: ${c.bg}; color: ${c.color}; border: 1px solid ${c.border}`)}>{c.t}</span>
+    <span className={c.cls} data-cursor={c.icon ? c.t : "Drag"} onPointerDown={grab(i)} style={sx(`position: absolute; left: 0; top: 0; transform: translate(-999px, -999px); white-space: nowrap; border-radius: 999px; font-weight: 500; letter-spacing: -0.01em; background: ${c.bg}; color: ${c.color}; border: 1px solid ${c.border}`)}>{c.icon ? (<svg viewBox="0 0 24 24" aria-hidden="true"><path d={c.icon} /></svg>) : c.t}</span>
     </Fragment>))}
     </div>
     <div style={sx(`margin-top: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px 24px; font-size: 13px; line-height: 1.6; color: #9A9A9A`)}>

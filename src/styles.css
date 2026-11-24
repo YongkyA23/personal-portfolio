@@ -268,3 +268,11 @@ section[id]{scroll-margin-top:118px}
 /* the hero fades over the first 720px of scroll. On phones the hero is taller than the screen,
    so that fade would dim the intro while it is still being read: keep it solid there. */
 @media (max-width: 820px){.dk-heroout{animation:none}}
+
+/* stack chips with a brand mark: round icon tiles; the name shows on the cursor (and in the list below) */
+.dk-chip.is-icon{width:60px;height:60px;padding:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
+.dk-chip.is-icon.is-lead{width:68px;height:68px}
+.dk-chip.is-icon svg{width:26px;height:26px;fill:currentColor;pointer-events:none}
+.dk-chip.is-icon.is-lead svg{width:30px;height:30px}
+@media (max-width:600px){.dk-chip.is-icon{width:46px;height:46px}.dk-chip.is-icon.is-lead{width:52px;height:52px}.dk-chip.is-icon svg{width:20px;height:20px}.dk-chip.is-icon.is-lead svg{width:23px;height:23px}}
+.dk-cursor::after{white-space:nowrap;font-size:12px}
