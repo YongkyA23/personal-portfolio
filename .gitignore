@@ -24,3 +24,7 @@ yarn-error.log*
 
 # environment variables
 .env
+
+# build output and runtime data
+/dist
+/server/data
