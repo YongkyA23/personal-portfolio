@@ -30,7 +30,7 @@ working on the front end.
 To work with saving and the admin page, point it at a MySQL database:
 
 ```bash
-DATABASE_URL='mysql://portfolio:secret@127.0.0.1:3306/portfolio' ADMIN_TOKEN=dev npm run dev
+DATABASE_URL='mysql://portfolio:secret@127.0.0.1:3306/portfolio' ADMIN_USER=admin ADMIN_PASSWORD_HASH="$(echo 'dev-password' | node server/auth.js | cut -d= -f2)" npm run dev
 ```
 
 The two tables (`site_content`, `hire_pings`) are created on first start.
@@ -50,7 +50,7 @@ and writes the production site to `dist/`.
 
 ## Editing content
 
-Open `/admin`, paste the admin token, edit a section and press Save. Each
+Open `/admin`, sign in with the admin username and password, edit a section and press Save. The session lasts 12 hours; changing the password signs every session out. Each
 section is JSON; anything that would break the page (a missing field, two
 projects with the same `id`, an invalid pattern) is refused with a message
 naming the field. Visitors see the change on their next page load.
@@ -96,8 +96,9 @@ Tested with Node 22, MySQL 8.4 and Nginx. MariaDB works too.
    npm run build
    ```
 
-3. Copy `.env.example` to `.env` and fill in `DATABASE_URL` and
-   `ADMIN_TOKEN`. Keep `TRUST_PROXY=1` behind Nginx.
+3. Copy `.env.example` to `.env` and fill in `DATABASE_URL`, `ADMIN_USER`
+   and `ADMIN_PASSWORD_HASH` (from `echo 'your password' | node server/auth.js`).
+   Keep `TRUST_PROXY=1` behind Nginx (`2` when Cloudflare proxies in front of it).
 4. Install `deploy/portfolio.service` as a systemd unit and start it:
 
    ```bash
@@ -113,7 +114,8 @@ To update later: pull, `npm ci`, `npm run build`, then
 | Variable | Purpose |
 | --- | --- |
 | `DATABASE_URL` | `mysql://user:password@host:3306/database`. Unset: bundled content, no saving. |
-| `ADMIN_TOKEN` | Password for `/admin`. Unset: the admin API is disabled. |
+| `ADMIN_USER` | Username for `/admin`. |
+| `ADMIN_PASSWORD_HASH` | scrypt hash of the admin password. Either unset: the admin page is disabled. |
 | `PORT` | Port to listen on. Default 8787. |
 | `TRUST_PROXY` | Number of reverse proxies in front. `1` behind Nginx. |
 

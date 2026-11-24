@@ -15,7 +15,6 @@ type TabId = (typeof TABS)[number]['id'] | 'pings';
 type Drafts = Record<string, string>;
 type Note = { kind: 'ok' | 'error'; text: string } | null;
 
-const TOKEN_KEY = 'ya-admin-token';
 const pretty = (value: unknown) => JSON.stringify(value, null, 2);
 
 function draftsFrom(content: Content): Drafts {
@@ -53,14 +52,89 @@ async function readError(res: Response): Promise<string> {
   return `The server answered ${res.status}.`;
 }
 
-export default function Admin() {
-  const [token, setToken] = useState(() => {
+/** null = still asking the server, '' = signed out, otherwise the signed-in username. */
+type Session = string | null;
+
+function Login({ onIn, notice }: { onIn: (user: string) => void; notice: string }) {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState(notice);
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setError('');
     try {
-      return window.sessionStorage.getItem(TOKEN_KEY) || '';
-    } catch {
-      return '';
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      if (!res.ok) throw new Error(await readError(res));
+      onIn(((await res.json()) as { user: string }).user);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Network error.');
+      setPassword('');
+    } finally {
+      setBusy(false);
     }
-  });
+  };
+
+  return (
+    <main className="adm adm-login">
+      <form className="adm-card" onSubmit={submit}>
+        <h1>Sign in</h1>
+        <p className="adm-mono">Portfolio admin</p>
+        <label className="adm-field">
+          <span>Username</span>
+          <input name="username" autoComplete="username" autoCapitalize="none" spellCheck={false} required value={username} onChange={(e) => setUsername(e.target.value)} />
+        </label>
+        <label className="adm-field">
+          <span>Password</span>
+          <input name="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+        </label>
+        {error && (
+          <p className="adm-note is-error" role="alert">
+            {error}
+          </p>
+        )}
+        <button type="submit" className="adm-btn is-solid" disabled={busy}>
+          {busy ? 'Signing in…' : 'Sign in'}
+        </button>
+        <a href="/" className="adm-mono">
+          ← Back to the site
+        </a>
+      </form>
+    </main>
+  );
+}
+
+export default function Admin() {
+  const [session, setSession] = useState<Session>(null);
+  const [ended, setEnded] = useState('');
+
+  useEffect(() => {
+    document.title = 'Admin · portfolio';
+    fetch('/api/session')
+      .then(async (res) => {
+        if (res.ok) return setSession(((await res.json()) as { user: string }).user);
+        setSession('');
+        if (res.status === 503) setEnded(await readError(res));
+      })
+      .catch(() => {
+        setSession('');
+        setEnded('Could not reach the server.');
+      });
+  }, []);
+
+  if (session === null) return <main className="adm"><p className="adm-mono">Loading…</p></main>;
+  if (!session) return <Login notice={ended} onIn={(user) => { setEnded(''); setSession(user); }} />;
+  return <Editor user={session} onOut={(why) => { setEnded(why); setSession(''); }} />;
+}
+
+function Editor({ user, onOut }: { user: string; onOut: (why: string) => void }) {
   const [drafts, setDrafts] = useState<Drafts | null>(null);
   const [saved, setSaved] = useState<Drafts | null>(null);
   const [tab, setTab] = useState<TabId>('profile');
@@ -69,7 +143,6 @@ export default function Admin() {
   const [pings, setPings] = useState<Array<{ at: string }> | null>(null);
 
   useEffect(() => {
-    document.title = 'Admin · portfolio';
     const controller = new AbortController();
     fetch('/api/content', { signal: controller.signal })
       .then(async (res) => {
@@ -93,13 +166,17 @@ export default function Admin() {
     return () => window.removeEventListener('beforeunload', warn);
   }, [dirty]);
 
-  const rememberToken = (value: string) => {
-    setToken(value);
-    try {
-      window.sessionStorage.setItem(TOKEN_KEY, value);
-    } catch {
-      /* the token just will not survive a reload */
-    }
+  // A 401 means the session cookie expired or was cleared: back to the sign-in screen.
+  const signedOut = (res: Response) => {
+    if (res.status !== 401) return false;
+    onOut('Your session has ended. Sign in again.');
+    return true;
+  };
+
+  const signOut = async () => {
+    if (dirty && !window.confirm('Discard unsaved changes and sign out?')) return;
+    await fetch('/api/logout', { method: 'POST' }).catch(() => {});
+    onOut('');
   };
 
   const save = async (e: FormEvent) => {
@@ -122,9 +199,10 @@ export default function Admin() {
     try {
       const res = await fetch('/api/content', {
         method: 'PUT',
-        headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+        headers: { 'content-type': 'application/json' },
         body: JSON.stringify(doc),
       });
+      if (signedOut(res)) return;
       if (!res.ok) throw new Error(await readError(res));
       setSaved(drafts);
       setNote({ kind: 'ok', text: 'Saved. The site shows it on the next page load.' });
@@ -138,7 +216,8 @@ export default function Admin() {
   const loadPings = useCallback(async () => {
     setPings(null);
     try {
-      const res = await fetch('/api/messages', { headers: { authorization: `Bearer ${token}` } });
+      const res = await fetch('/api/messages');
+      if (signedOut(res)) return;
       if (!res.ok) throw new Error(await readError(res));
       setPings((await res.json()) as Array<{ at: string }>);
       setNote(null);
@@ -146,7 +225,7 @@ export default function Admin() {
       setPings([]);
       setNote({ kind: 'error', text: `Could not load pings: ${err instanceof Error ? err.message : 'network error'}` });
     }
-  }, [token]);
+  }, [onOut]);
 
   const openTab = (id: TabId) => {
     setTab(id);
@@ -168,14 +247,11 @@ export default function Admin() {
       <div className="adm-row">
         <h1 className="adm-grow">Portfolio admin</h1>
         <a href="/">← Back to the site</a>
+        <span className="adm-mono">{user}</span>
+        <button type="button" className="adm-btn" onClick={signOut}>
+          Sign out
+        </button>
       </div>
-
-      <label className="adm-row">
-        <span className="adm-mono">ADMIN TOKEN</span>
-        <span className="adm-grow">
-          <input type="password" autoComplete="off" value={token} onChange={(e) => rememberToken(e.target.value)} placeholder="The ADMIN_TOKEN set on the server" />
-        </span>
-      </label>
 
       <div className="adm-row" role="group" aria-label="Sections">
         {TABS.map((t) => (
@@ -209,7 +285,7 @@ export default function Admin() {
             <button type="button" className="adm-btn" disabled={!dirty || busy} onClick={() => saved && setDrafts(saved)}>
               Discard changes
             </button>
-            <button type="submit" className="adm-btn is-solid" disabled={!dirty || busy || !token}>
+            <button type="submit" className="adm-btn is-solid" disabled={!dirty || busy}>
               {busy ? 'Saving…' : 'Save'}
             </button>
           </div>

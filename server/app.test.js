@@ -1,28 +1,40 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { createApp } from './app.js';
 import { createMemoryStore } from './store.js';
+import { checkSession, createSession, hashPassword } from './auth.js';
 
 const seed = JSON.parse(readFileSync(new URL('../content/content.json', import.meta.url), 'utf8'));
-const TOKEN = 'test-token';
+const USER = 'admin';
+const PASSWORD = 'correct horse battery';
+let admin;
+let cookie = '';
 const servers = [];
 
+beforeAll(async () => {
+  admin = { user: USER, passwordHash: await hashPassword(PASSWORD) };
+});
+
+const json = (method, body) => ({ method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+
+/** Starts an app and signs in, so `call` carries the session cookie unless told otherwise. */
 async function start(options) {
-  const app = createApp({ seed, adminToken: TOKEN, ...options });
+  const app = createApp({ seed, admin, ...options });
   const server = await new Promise((resolve) => {
     const s = app.listen(0, '127.0.0.1', () => resolve(s));
   });
   servers.push(server);
   const base = `http://127.0.0.1:${server.address().port}`;
-  return (path, init = {}) => fetch(base + path, init);
+  const raw = (path, init = {}) => fetch(base + path, init);
+  cookie = '';
+  const login = await raw('/api/login', json('POST', { username: USER, password: PASSWORD }));
+  if (login.ok) cookie = (login.headers.get('set-cookie') || '').split(';')[0];
+  return (path, init = {}, signedIn = true) =>
+    raw(path, { ...init, headers: { ...(init.headers || {}), ...(signedIn && cookie ? { cookie } : {}) } });
 }
 
-const put = (body, token = TOKEN) => ({
-  method: 'PUT',
-  headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
-  body: JSON.stringify(body),
-});
-const auth = { headers: { authorization: `Bearer ${TOKEN}` } };
+const put = (body) => json('PUT', body);
+const auth = {};
 
 afterEach(async () => {
   await Promise.all(servers.splice(0).map((s) => new Promise((r) => s.close(r))));
@@ -44,10 +56,11 @@ describe('content', () => {
     expect((await (await call('/api/content')).json()).profile.availability).toBe('Fully booked');
   });
 
-  it('rejects a missing or wrong token', async () => {
+  it('rejects a save without a session or with a forged one', async () => {
     const call = await start({ store: createMemoryStore() });
-    expect((await call('/api/content', put(seed, ''))).status).toBe(401);
-    expect((await call('/api/content', put(seed, 'nope'))).status).toBe(401);
+    expect((await call('/api/content', put(seed), false)).status).toBe(401);
+    const forged = { ...put(seed), headers: { ...put(seed).headers, cookie: `ya_admin=${Date.now() + 9e9}.forged` } };
+    expect((await call('/api/content', forged, false)).status).toBe(401);
   });
 
   it('rejects content that would break the page and names the field', async () => {
@@ -66,11 +79,56 @@ describe('content', () => {
   });
 });
 
-describe('admin switch', () => {
-  it('disables admin routes when no token is configured', async () => {
-    const call = await start({ store: createMemoryStore(), adminToken: '' });
-    expect((await call('/api/content', put(seed, ''))).status).toBe(503);
-    expect((await call('/api/messages')).status).toBe(503);
+describe('admin login', () => {
+  it('signs in with the right username and password and sets an HttpOnly cookie', async () => {
+    await start({ store: createMemoryStore() });
+    expect(cookie).toMatch(/^ya_admin=/);
+    const call = await start({ store: createMemoryStore() });
+    const res = await call('/api/session');
+    expect(res.status).toBe(200);
+    expect((await res.json()).user).toBe(USER);
+  });
+
+  it('refuses a wrong password or username with the same message', async () => {
+    const call = await start({ store: createMemoryStore() });
+    for (const body of [{ username: USER, password: 'nope' }, { username: 'root', password: PASSWORD }, {}]) {
+      const res = await call('/api/login', json('POST', body), false);
+      expect(res.status).toBe(401);
+      expect((await res.json()).error).toBe('Wrong username or password.');
+    }
+  });
+
+  it('marks the cookie HttpOnly and SameSite=Strict', async () => {
+    const app = createApp({ seed, admin, store: createMemoryStore() });
+    const server = await new Promise((resolve) => {
+      const s = app.listen(0, '127.0.0.1', () => resolve(s));
+    });
+    servers.push(server);
+    const res = await fetch(`http://127.0.0.1:${server.address().port}/api/login`, json('POST', { username: USER, password: PASSWORD }));
+    const header = res.headers.get('set-cookie') || '';
+    expect(header).toContain('HttpOnly');
+    expect(header).toContain('SameSite=Strict');
+  });
+
+  it('signs out', async () => {
+    const call = await start({ store: createMemoryStore() });
+    const res = await call('/api/logout', { method: 'POST' });
+    expect(res.headers.get('set-cookie')).toContain('Max-Age=0');
+  });
+
+  it('expires sessions and rejects ones signed with another password', () => {
+    const now = Date.now();
+    const token = createSession('key-a', now);
+    expect(checkSession('key-a', token, now)).toBe(true);
+    expect(checkSession('key-b', token, now)).toBe(false);
+    expect(checkSession('key-a', token, now + 13 * 3600_000)).toBe(false);
+  });
+
+  it('disables admin routes when no admin is configured', async () => {
+    const call = await start({ store: createMemoryStore(), admin: undefined });
+    expect((await call('/api/login', json('POST', { username: USER, password: PASSWORD }), false)).status).toBe(503);
+    expect((await call('/api/content', put(seed), false)).status).toBe(503);
+    expect((await call('/api/messages', {}, false)).status).toBe(503);
   });
 });
 
@@ -114,7 +172,7 @@ describe('hire pings', () => {
 
   it('keeps the ping list private', async () => {
     const call = await start({ store: createMemoryStore() });
-    expect((await call('/api/messages')).status).toBe(401);
+    expect((await call('/api/messages', {}, false)).status).toBe(401);
   });
 });
 
