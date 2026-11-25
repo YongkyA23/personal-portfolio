@@ -320,8 +320,8 @@ section[id]{scroll-margin-top:118px}
 @supports (animation-timeline: view()){
 .dk-para{animation:dk-para-m linear both;animation-timeline:view();animation-range:cover 0% cover 100%}
 @keyframes dk-para-m{from{transform:translateY(-40%)}to{transform:translateY(170%)}}
-.dk-heroout{animation:dk-sink linear both;animation-timeline:view();animation-range:exit 0% exit 100%}
-@keyframes dk-sink{from{transform:none}to{transform:translateY(140px) scale(.96)}}
+/* the hero text stays still on phones: it is read while scrolling, and iOS Safari mishandled it moving over the ASCII layer */
+.dk-heroout{animation:none}
 /* the title block (its "0N · name" label and the h2) drifts as one, so the two never collide */
 main section div:has(> h2:not(.dk-reveal)){animation:dk-drift linear both;animation-timeline:view();animation-range:cover 0% cover 100%}
 @keyframes dk-drift{from{transform:translateY(36px)}to{transform:translateY(-36px)}}
@@ -334,8 +334,6 @@ main section div:has(> h2:not(.dk-reveal)){animation:dk-drift linear both;animat
 .dk-ascii{position:absolute;z-index:0;top:0;right:0;bottom:0;width:48%;overflow:hidden;pointer-events:none;color:#6E6E6E;opacity:0;transition:opacity .8s ease;
   -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 42%);mask-image:linear-gradient(90deg,transparent 0,#000 42%)}
 .dk-ascii.is-on{opacity:1}
-/* the grid's character size is computed to the pixel: never let a phone browser enlarge it */
-.dk-ascii,.dk-ascii *{-webkit-text-size-adjust:none;text-size-adjust:none}
 .dk-lamp-on .dk-ascii{color:#EDEDED}
 /* phones: a dim band behind the kicker and headline only, faded out before the intro paragraph */
 @media (max-width: 820px){.dk-ascii{width:100%;bottom:auto;height:min(78vw,420px);color:#333;-webkit-mask-image:linear-gradient(180deg,#000 55%,transparent);mask-image:linear-gradient(180deg,#000 55%,transparent)}}
@@ -345,10 +343,8 @@ main section div:has(> h2:not(.dk-reveal)){animation:dk-drift linear both;animat
 .dk-deploy.is-folded{transform:scale(.18) rotate(-14deg);opacity:0}
 @media (prefers-reduced-motion: reduce){.dk-deploy{transition:none}}
 
-/* iOS Safari: the ASCII grid repaints every frame; keep it on its own isolated layer and give the hero
-   text its own layer too, so Safari never drops the text painted over it */
-.dk-ascii{contain:strict;isolation:isolate;transform:translateZ(0)}
-.dk-heroout{isolation:isolate;will-change:transform}
+/* the ASCII canvas repaints every frame; keep that work inside its own box */
+.dk-ascii{contain:strict}
 /* iOS zooms the page into any field whose text is under 16px; touch screens get 16px fields everywhere
    (site, terminal, palette, admin) instead of disabling zoom for everyone */
 @media (hover:none) and (pointer:coarse){input,textarea,select{font-size:16px !important}}

@@ -18,7 +18,6 @@ import {
   Shape,
   WebGLRenderer,
 } from 'three';
-import { AsciiEffect } from 'three/examples/jsm/effects/AsciiEffect.js';
 import { TessellateModifier } from 'three/examples/jsm/modifiers/TessellateModifier.js';
 import { createTiltAim } from '../lib/tilt';
 
@@ -88,20 +87,67 @@ export function mountAsciiHero(host: HTMLElement, hero: HTMLElement): AsciiHero 
     geometry.attributes.position.needsUpdate = true;
   };
 
-  const effect = new AsciiEffect(renderer, ' .:-+*=%@#', { invert: true, resolution: phone ? 0.2 : 0.17 });
-  effect.domElement.style.color = 'inherit';
-  effect.domElement.style.backgroundColor = 'transparent';
-  host.appendChild(effect.domElement);
+  // ASCII on a canvas: the scene renders at one pixel per character cell, and each cell's brightness
+  // picks a character drawn onto a 2D canvas. (three's AsciiEffect rebuilds a DOM table of text every
+  // frame; iOS Safari handled that badly, and the hero text over it could vanish after scrolling.)
+  const CHARS = ' .:-+*=%@#';
+  const CELL_H = phone ? 9 : 10;
+  const FONT = `${CELL_H}px ui-monospace, Menlo, Consolas, "Courier New", monospace`;
+  let cellW = 6; // measured from the font actually used, so a whole row can be drawn as one string
+  const out = document.createElement('canvas');
+  Object.assign(out.style, { position: 'absolute', inset: '0', width: '100%', height: '100%', display: 'block' });
+  host.appendChild(out);
+  const octx = out.getContext('2d')!;
+  const sample = document.createElement('canvas');
+  const sctx = sample.getContext('2d', { willReadFrequently: true })!;
+  let cols = 0;
+  let rows = 0;
+  let dpr = 1;
+  let ink = '#8F8F8F';
+  let inkAt = -1e9;
 
   const resize = () => {
     const w = host.clientWidth;
     const h = host.clientHeight;
     if (!w || !h) return;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    out.width = Math.round(w * dpr);
+    out.height = Math.round(h * dpr);
+    octx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    octx.font = FONT;
+    octx.textBaseline = 'top';
+    cellW = octx.measureText('M').width || 6;
+    cols = Math.max(1, Math.floor(w / cellW));
+    rows = Math.max(1, Math.floor(h / CELL_H));
+    renderer.setSize(cols, rows, false);
+    sample.width = cols;
+    sample.height = rows;
     camera.aspect = w / h;
     // keep the whole monogram in frame in a tall, narrow box (phones)
     camera.position.set(0, 0, camera.aspect < 0.9 ? (36 / Math.max(camera.aspect, 0.5)) * 0.9 : 36);
     camera.updateProjectionMatrix();
-    effect.setSize(w, h);
+  };
+  const paint = (now: number) => {
+    if (!cols || !rows) return;
+    renderer.render(scene, camera);
+    sctx.drawImage(renderer.domElement, 0, 0, cols, rows);
+    const px = sctx.getImageData(0, 0, cols, rows).data;
+    // the colour follows the CSS (dim by default, bright under the flashlight)
+    if (now - inkAt > 400) {
+      ink = getComputedStyle(host).color;
+      inkAt = now;
+    }
+    octx.clearRect(0, 0, out.width / dpr, out.height / dpr);
+    octx.fillStyle = ink;
+    const top = CHARS.length - 1;
+    for (let y = 0; y < rows; y++) {
+      let line = '';
+      for (let x = 0; x < cols; x++) {
+        const i = (y * cols + x) * 4;
+        line += CHARS[Math.round(((0.3 * px[i] + 0.59 * px[i + 1] + 0.11 * px[i + 2]) / 255) * top)];
+      }
+      if (line.trim()) octx.fillText(line, 0, y * CELL_H);
+    }
   };
   const ro = new ResizeObserver(() => {
     resize();
@@ -150,12 +196,12 @@ export function mountAsciiHero(host: HTMLElement, hero: HTMLElement): AsciiHero 
     ry += (ty - ry) * k;
     mesh.rotation.set(rx, ry, 0);
     scatter(still ? 0 : progress());
-    effect.render(scene, camera);
+    paint(now);
   }
 
   let raf = 0;
   let running = false;
-  // Phones redraw the character grid at ~30 fps: the same look, half the layout work while scrolling.
+  // Phones redraw the character grid at ~30 fps: the same look, half the work while scrolling.
   let lastDraw = 0;
   const loop = (now: number) => {
     if (!phone || now - lastDraw > 30) {
@@ -185,7 +231,7 @@ export function mountAsciiHero(host: HTMLElement, hero: HTMLElement): AsciiHero 
       hero.removeEventListener('pointermove', onPointer);
       hero.removeEventListener('pointerleave', onLeave);
       window.removeEventListener('deviceorientation', onTilt);
-      effect.domElement.remove();
+      out.remove();
       geometry.dispose();
       renderer.dispose();
     },
