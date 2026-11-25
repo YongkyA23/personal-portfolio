@@ -190,3 +190,18 @@ describe('tilt aim', () => {
     expect(aim(20, -80, 90)!.x).toBeGreaterThan(0.3); // beta is "sideways" when rotated 90°
   });
 });
+
+describe('3D logo shape', () => {
+  it('turns the Splice SVG path into a centred, y-up shape of the right size', async () => {
+    const { shapeFromPath } = await import('../three/asciiHero');
+    const { MARK_PATH } = await import('../site/Mark');
+    const pts = shapeFromPath(MARK_PATH, 0.06).getPoints();
+    const xs = pts.map((p) => p.x), ys = pts.map((p) => p.y);
+    expect(Math.max(...xs) - Math.min(...xs)).toBeCloseTo(352 * 0.06, 5);
+    expect(Math.max(...ys) - Math.min(...ys)).toBeCloseTo(219 * 0.06, 5);
+    expect(Math.min(...xs) + Math.max(...xs)).toBeCloseTo(0, 5); // centred
+    // the Y's top-left corner (40,106 in SVG, y down) sits at the top-left in y-up space
+    expect(pts[0].x).toBeLessThan(0);
+    expect(pts[0].y).toBeGreaterThan(0);
+  });
+});

@@ -331,8 +331,8 @@ main section div:has(> h2:not(.dk-reveal)){animation:dk-drift linear both;animat
 @media (prefers-reduced-motion: reduce){main section h2,main section div:has(> h2){animation:none !important}}
 
 /* hero: the "YA" monogram rendered in ASCII by three.js (src/three/asciiHero.ts), behind the text */
-.dk-ascii{position:absolute;z-index:0;top:0;right:0;bottom:0;width:48%;overflow:hidden;pointer-events:none;color:#6E6E6E;opacity:0;transition:opacity .8s ease;
-  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 42%);mask-image:linear-gradient(90deg,transparent 0,#000 42%)}
+.dk-ascii{position:absolute;z-index:0;top:0;right:0;bottom:0;width:54%;overflow:hidden;pointer-events:none;color:#6E6E6E;opacity:0;transition:opacity .8s ease;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 30%);mask-image:linear-gradient(90deg,transparent 0,#000 30%)}
 .dk-ascii.is-on{opacity:1}
 .dk-lamp-on .dk-ascii{color:#EDEDED}
 /* phones: a dim band behind the kicker and headline only, faded out before the intro paragraph */

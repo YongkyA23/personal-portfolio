@@ -1,4 +1,4 @@
-// The hero's "YA" monogram as a three.js model rendered in ASCII characters.
+// The hero's "YA" logo as a three.js model rendered in ASCII characters.
 // It turns toward the cursor (or with the phone's tilt), scatters into loose characters as the
 // hero scrolls away, renders only while the hero is on screen, and draws one still frame when
 // the visitor prefers reduced motion. Loaded lazily, after the page is up.
@@ -11,7 +11,6 @@ import {
   ExtrudeGeometry,
   Mesh,
   MeshPhongMaterial,
-  Path,
   PerspectiveCamera,
   PointLight,
   Scene,
@@ -20,24 +19,48 @@ import {
 } from 'three';
 import { TessellateModifier } from 'three/examples/jsm/modifiers/TessellateModifier.js';
 import { createTiltAim } from '../lib/tilt';
+import { MARK_PATH } from '../site/Mark';
 
-/** "Y" and "A" as two extruded outlines (no font file), split into small triangles so they scatter finely. */
+/**
+ * The site's "Splice" logo as a solid: its SVG path (absolute M/L/H/V/Z only) becomes a three.js Shape,
+ * flipped to y-up and scaled to about 21 units wide, then extruded and split into small triangles
+ * so it scatters finely.
+ */
+export function shapeFromPath(d: string, scale: number): Shape {
+  const s = new Shape();
+  let x = 0;
+  let y = 0;
+  let cx = 0;
+  let cy = 0;
+  const pts: number[][] = [];
+  for (const [, cmd, args] of d.matchAll(/([MLHVZ])([^MLHVZ]*)/gi)) {
+    const n = args.trim() ? args.trim().split(/[\s,]+/).map(Number) : [];
+    if (cmd === 'M' || cmd === 'L') [x, y] = n;
+    else if (cmd === 'H') x = n[0];
+    else if (cmd === 'V') y = n[0];
+    else continue; // Z
+    pts.push([x, y]);
+  }
+  const xs = pts.map((p) => p[0]);
+  const ys = pts.map((p) => p[1]);
+  cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+  cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+  pts.forEach(([px, py], i) => {
+    const sx = (px - cx) * scale;
+    const sy = -(py - cy) * scale;
+    if (i) s.lineTo(sx, sy);
+    else s.moveTo(sx, sy);
+  });
+  s.closePath();
+  return s;
+}
+
+const LOGO_SCALE = 0.06;
+const LOGO_W = 352 * LOGO_SCALE;
+
 function monogram(): BufferGeometry {
-  const poly = (pts: number[][], ox: number) => {
-    const s = new Shape();
-    pts.forEach(([x, y], i) => (i ? s.lineTo(x + ox, y) : s.moveTo(x + ox, y)));
-    s.closePath();
-    return s;
-  };
-  const Y = poly([[0, 10], [2.5, 10], [4, 7], [5.5, 10], [8, 10], [5.15, 4.8], [5.15, 0], [2.85, 0], [2.85, 4.8]], -8.9);
-  const A = poly([[0, 0], [3.1, 10], [4.9, 10], [8, 0], [5.7, 0], [5.1, 2.1], [2.9, 2.1], [2.3, 0]], 0.9);
-  const hole = new Path();
-  [[3.45, 4.1], [4.55, 4.1], [4, 6.2]].forEach(([x, y], i) => (i ? hole.lineTo(x + 0.9, y) : hole.moveTo(x + 0.9, y)));
-  hole.closePath();
-  A.holes.push(hole);
-  let g: BufferGeometry = new ExtrudeGeometry([Y, A], { depth: 2.6, bevelEnabled: true, bevelThickness: 0.4, bevelSize: 0.28, bevelSegments: 2, curveSegments: 4 });
+  let g: BufferGeometry = new ExtrudeGeometry(shapeFromPath(MARK_PATH, LOGO_SCALE), { depth: 2.6, bevelEnabled: true, bevelThickness: 0.4, bevelSize: 0.28, bevelSegments: 2, curveSegments: 4 });
   g.center();
-  g.scale(1.15, 1.15, 1.15);
   g = new TessellateModifier(1.1, 4).modify(g.index ? g.toNonIndexed() : g);
   g.computeVertexNormals();
   return g;
@@ -123,8 +146,9 @@ export function mountAsciiHero(host: HTMLElement, hero: HTMLElement): AsciiHero 
     sample.width = cols;
     sample.height = rows;
     camera.aspect = w / h;
-    // keep the whole monogram in frame in a tall, narrow box (phones)
-    camera.position.set(0, 0, camera.aspect < 0.9 ? (36 / Math.max(camera.aspect, 0.5)) * 0.9 : 36);
+    // back the camera off until the logo (about 21 units wide) spans ~70% of the box's width
+    const fitZ = (LOGO_W / 0.7) / (2 * Math.tan((camera.fov * Math.PI) / 360) * camera.aspect);
+    camera.position.set(0, 0, Math.max(36, fitZ));
     camera.updateProjectionMatrix();
   };
   const paint = (now: number) => {
