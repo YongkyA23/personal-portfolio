@@ -322,12 +322,13 @@ section[id]{scroll-margin-top:118px}
 @keyframes dk-para-m{from{transform:translateY(-40%)}to{transform:translateY(170%)}}
 .dk-heroout{animation:dk-sink linear both;animation-timeline:view();animation-range:exit 0% exit 100%}
 @keyframes dk-sink{from{transform:none}to{transform:translateY(140px) scale(.96)}}
-main section h2:not(.dk-reveal){animation:dk-drift linear both;animation-timeline:view();animation-range:cover 0% cover 100%}
+/* the title block (its "0N · name" label and the h2) drifts as one, so the two never collide */
+main section div:has(> h2:not(.dk-reveal)){animation:dk-drift linear both;animation-timeline:view();animation-range:cover 0% cover 100%}
 @keyframes dk-drift{from{transform:translateY(36px)}to{transform:translateY(-36px)}}
 .dk-hsec.is-on .dk-hpin{top:108px;height:calc(100svh - 108px);padding:20px 0 !important}
 }
 }
-@media (prefers-reduced-motion: reduce){main section h2{animation:none !important}}
+@media (prefers-reduced-motion: reduce){main section h2,main section div:has(> h2){animation:none !important}}
 
 /* hero: the "YA" monogram rendered in ASCII by three.js (src/three/asciiHero.ts), behind the text */
 .dk-ascii{position:absolute;z-index:0;top:0;right:0;bottom:0;width:48%;overflow:hidden;pointer-events:none;color:#6E6E6E;opacity:0;transition:opacity .8s ease;
@@ -343,3 +344,12 @@ main section h2:not(.dk-reveal){animation:dk-drift linear both;animation-timelin
 .dk-deploy{transition:transform .45s cubic-bezier(.6,0,.4,1),opacity .35s ease}
 .dk-deploy.is-folded{transform:scale(.18) rotate(-14deg);opacity:0}
 @media (prefers-reduced-motion: reduce){.dk-deploy{transition:none}}
+
+/* iOS Safari: the ASCII grid repaints every frame; keep it on its own isolated layer and give the hero
+   text its own layer too, so Safari never drops the text painted over it */
+.dk-ascii{contain:strict;isolation:isolate;transform:translateZ(0)}
+.dk-heroout{isolation:isolate;will-change:transform}
+/* iOS zooms the page into any field whose text is under 16px; touch screens get 16px fields everywhere
+   (site, terminal, palette, admin) instead of disabling zoom for everyone */
+@media (hover:none) and (pointer:coarse){input,textarea,select{font-size:16px !important}}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
