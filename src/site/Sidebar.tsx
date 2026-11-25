@@ -3,6 +3,7 @@ import { sx } from '../lib/css';
 import type { Profile } from '../content/types';
 import { SECTIONS, type SectionId } from './icons';
 import { Scramble } from './Scramble';
+import { YaMark } from './Mark';
 
 // Flashlight pull cord: how far it stretches (px) and how far it must be pulled to switch.
 const PULL_MAX = 48;
@@ -116,7 +117,7 @@ export const Sidebar = memo(function Sidebar({ profile, enterDelay, active, lamp
     </button>
 
     <div className="dk-side-id" style={sx(`display: flex; align-items: center; gap: 12px; padding: 0 20px 0 8px`)}>
-    <span aria-hidden="true" style={sx(`width: 40px; height: 40px; border-radius: 50%; background: #EDEDED; color: #070707; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; letter-spacing: -0.02em; flex: none`)}>{profile.initials}</span>
+    <span aria-hidden="true" style={sx(`width: 40px; height: 40px; border-radius: 50%; background: #EDEDED; color: #070707; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; letter-spacing: -0.02em; flex: none`)}><YaMark style={{ width: '62%' }} /></span>
     <div style={sx(`display: flex; flex-direction: column; min-width: 0`)}>
     <span style={sx(`font-weight: 500; font-size: 15px; letter-spacing: -0.01em`)}>{profile.name}</span>
     <span style={sx(`font-size: 13px; color: #9A9A9A`)}>{profile.role}</span>

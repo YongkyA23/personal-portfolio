@@ -1,21 +1,21 @@
 import { sx } from '../lib/css';
+import { YaMark } from './Mark';
 
 interface Props {
   name: string;
-  initials: string;
   projectCount: number;
   experienceCount: number;
   onSkip: () => void;
 }
 
 /** First-visit loading screen. The lift-off is a CSS animation; the parent unmounts it afterwards. */
-export function Intro({ name, initials, projectCount, experienceCount, onSkip }: Props) {
+export function Intro({ name, projectCount, experienceCount, onSkip }: Props) {
   const skip = onSkip;
   return (
     <div className="dk-intro" role="status" aria-label="Loading portfolio">
     <div style={sx(`display: flex; justify-content: space-between; align-items: center; gap: 16px`)}>
     <div style={sx(`display: flex; align-items: center; gap: 12px`)}>
-    <span aria-hidden="true" style={sx(`width: 40px; height: 40px; border-radius: 50%; background: #EDEDED; color: #050505; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px`)}>{initials}</span>
+    <span aria-hidden="true" style={sx(`width: 40px; height: 40px; border-radius: 50%; background: #EDEDED; color: #050505; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px`)}><YaMark style={{ width: '62%' }} /></span>
     <span style={sx(`font-weight: 500; font-size: 15px`)}>{name}</span>
     </div>
     <button type="button" onClick={skip} className="dk-ghost" style={sx(`min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid #262626; background: transparent; color: #C9C9C9; font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em`)}>SKIP INTRO →</button>

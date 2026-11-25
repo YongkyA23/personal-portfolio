@@ -275,7 +275,6 @@ export default function Site({ content, settled }: Props) {
         <Intro
           key={introRun}
           name={profile.name}
-          initials={profile.initials}
           projectCount={projects.length}
           experienceCount={content.experience.length}
           onSkip={skip}
